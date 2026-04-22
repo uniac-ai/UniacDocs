@@ -1,0 +1,42 @@
+---
+title: "Installation"
+description: "Install the Uniac Python SDK and the uniac CLI."
+---
+
+Install both the Python SDK and the `uniac` CLI to get started.
+
+## Install the SDK
+
+```bash
+pip install uniac
+```
+
+## Install the CLI
+
+<CodeGroup>
+
+```bash macOS / Linux
+curl -fsSL https://install.uniac.ai | sh
+```
+
+```bash Homebrew
+brew install uniac/tap/uniac
+```
+
+```bash Windows (PowerShell)
+iwr https://install.uniac.ai/ps | iex
+```
+
+</CodeGroup>
+
+## Verify
+
+```bash
+uniac --version
+python -c "import uniac; print(uniac.__version__)"
+```
+
+## Requirements
+
+- Python 3.10 or newer
+- Docker Desktop (required for `uniac sim`)

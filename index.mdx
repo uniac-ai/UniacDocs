@@ -1,97 +1,70 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Uniac"
+description: "An LLM-native backend framework for building and deploying Python services."
 ---
 
-## Setting up
+Uniac is a Python framework and managed platform for building, running, and deploying backend services with AI primitives built in. Write a service as a Python class, test it locally with the simulator, and deploy it to the cloud with a single command.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<CardGroup cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
   >
-    Edit your docs locally and preview them in real time.
+    Install the CLI, write your first service, and deploy it in under five minutes.
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
+    title="Your first service"
     icon="code"
-    href="/essentials/code"
+    href="/get-started/your-first-service"
   >
-    Add sample code to demonstrate how to use your product.
+    A step-by-step walkthrough of the full build → simulate → deploy loop.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Learn the basics
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Core concepts" icon="book" href="/concepts/services">
+    Services, endpoints, projects, and deployments.
+  </Card>
+  <Card title="Writing services" icon="pen-to-square" href="/services/fastapi-service">
+    Define handlers, routes, and service-to-service calls.
+  </Card>
+  <Card title="Run locally" icon="laptop-code" href="/local/simulator">
+    Iterate with the local simulator.
+  </Card>
+  <Card title="Deploy" icon="cloud-arrow-up" href="/deploy/first-deploy">
+    Ship your service to the cloud.
+  </Card>
+</CardGroup>
+
+## Reference
+
+<CardGroup cols={2}>
+  <Card title="SDK reference" icon="python" href="/sdk/overview">
+    The Python `uniac` package.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/cli/overview">
+    Every `uniac` command and flag.
+  </Card>
+</CardGroup>
+
+## Recipes
+
+Short, copy-pasteable patterns for common tasks.
+
+<CardGroup cols={2}>
+  <Card title="Call Claude from a service" icon="sparkles" href="/recipes/call-anthropic">
+    Stream completions from Anthropic's API.
+  </Card>
+  <Card title="Receive webhooks" icon="bolt" href="/recipes/webhook-receiver">
+    Expose a handler that accepts webhook deliveries.
+  </Card>
+  <Card title="Run a background job" icon="clock" href="/recipes/background-job">
+    Long-running work that outlives a single request.
+  </Card>
+  <Card title="Multi-service apps" icon="diagram-project" href="/recipes/multi-service-app">
+    Two services communicating with `ServiceClient`.
+  </Card>
+</CardGroup>

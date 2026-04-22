@@ -1,0 +1,28 @@
+---
+title: "Log in"
+description: "Authenticate the uniac CLI with your Uniac account."
+---
+
+Before you can deploy, you need to log in.
+
+```bash
+uniac auth login
+```
+
+The CLI opens a browser window to complete the OAuth flow. If you're on a headless machine, the CLI prints a code and URL you can open on another device.
+
+## Check who you're logged in as
+
+```bash
+uniac auth whoami
+```
+
+## Log out
+
+```bash
+uniac auth logout
+```
+
+## Where credentials live
+
+The CLI stores your access token in `~/.uniac/credentials`. Keep this file private — anyone with it can deploy on your behalf.

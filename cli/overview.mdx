@@ -1,0 +1,41 @@
+---
+title: "CLI overview"
+description: "The uniac command-line tool."
+---
+
+The `uniac` CLI is how you scaffold, build, simulate, and deploy services.
+
+## Install
+
+<CodeGroup>
+
+```bash macOS / Linux
+curl -fsSL https://install.uniac.ai | sh
+```
+
+```bash Homebrew
+brew install uniac/tap/uniac
+```
+
+</CodeGroup>
+
+## Global flags
+
+- `--help` — show help for a command
+- `--version` — print version
+- `--verbose` — include debug output
+- `--project <path>` — run against a project other than the current directory
+
+## Configuration file
+
+The CLI reads and writes config at `~/.uniac/config.yaml`. See [`uniac config`](/cli/config).
+
+## Commands
+
+- [`uniac auth`](/cli/auth) — log in and out
+- [`uniac config`](/cli/config) — view and edit CLI settings
+- [`uniac init`](/cli/init) — scaffold a new service
+- [`uniac build`](/cli/build) — build a service image
+- [`uniac install`](/cli/install) — install service dependencies
+- [`uniac sim`](/cli/sim) — run services locally
+- [`uniac deploy`](/cli/deploy) — deploy to the cloud
