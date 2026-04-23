@@ -1,13 +1,35 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "Uniac",
+  "description": "Build systems at the speed of thought.",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#C8312D",
+    "light": "#E94F37",
+    "dark": "#A02420"
   },
-  "favicon": "/favicon.svg",
+  "fonts": {
+    "heading": {
+      "family": "Geist",
+      "weight": 600
+    },
+    "body": {
+      "family": "Geist",
+      "weight": 400
+    }
+  },
+  "background": {
+    "decoration": "gradient",
+    "color": {
+      "light": "#F7FAFF",
+      "dark": "#0A0A0A"
+    }
+  },
+  "appearance": {
+    "default": "light",
+    "strict": false
+  },
+  "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
       {
@@ -165,8 +187,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
   },
   "navbar": {
     "links": [
