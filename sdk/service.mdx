@@ -1,14 +1,37 @@
 ---
 title: "Service"
-description: "API reference for the uniac.Service base class."
+description: "API reference for uniac.Service."
 ---
 
-Lower-level base class. Use `FastAPIService` unless you have a reason not to.
+`uniac.Service` is the base class for `kind=lib` packages — reusable building blocks consumed by other Services or Systems. It is a pure marker subclass of [`NodeSpec`](/sdk/nodespec): no `__init__`, no methods to override.
 
-## Class signature
+```python
+from uniac import Service
+```
 
-## Constructor
+## Declaring a Service
 
-## Lifecycle methods
+Subclass `Service` and declare any [`Node`](/sdk/node) dependencies as class-level annotations. If you take init args, provide your own `__init__`.
 
-## When to use Service vs FastAPIService
+```python
+from uniac import Service
+from db import Db  # generated Node stub
+
+class Cache(Service):
+    db: Db
+
+    def __init__(self, ttl_seconds: int = 60):
+        self.db = Db()
+        self.ttl_seconds = ttl_seconds
+```
+
+`uniac build` publishes this Service to the local store. Other packages list its name under `dependencies` in [`uniac.json`](/concepts/manifest), run `uniac install`, and import a generated `Cache` Node stub.
+
+## What `Service` provides
+
+- `_uniac_validate()` — inherited from [`NodeSpec`](/sdk/nodespec).
+- `_uniac_walk()` — inherited from [`NodeSpec`](/sdk/nodespec).
+
+There is **no** base-class `__init__` to call. The framework never auto-instantiates Nodes; you do.
+
+For deployable packages, use [`System`](/sdk/system) instead.

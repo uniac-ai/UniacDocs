@@ -1,33 +1,23 @@
 ---
 title: "Installation"
-description: "Install the Uniac Python SDK and the uniac CLI."
+description: "Install the uniac CLI and the Python SDK."
 ---
 
-Install both the Python SDK and the `uniac` CLI to get started.
+## CLI
 
-## Install the SDK
+```bash
+npm i -g @uniac/cli
+```
+
+`@uniac/cli` is a JS shim that resolves to a platform-specific package containing the Go binary. npm installs the matching one based on your `os` and `cpu`.
+
+Users on platforms without a prebuilt binary (anything other than darwin/linux × arm64/x64) can grab a tar.gz from the [releases page](https://github.com/uniac-ai/Uniac/releases) and put `uniac` on `$PATH` manually.
+
+## SDK
 
 ```bash
 pip install uniac
 ```
-
-## Install the CLI
-
-<CodeGroup>
-
-```bash macOS / Linux
-curl -fsSL https://install.uniac.ai | sh
-```
-
-```bash Homebrew
-brew install uniac/tap/uniac
-```
-
-```bash Windows (PowerShell)
-iwr https://install.uniac.ai/ps | iex
-```
-
-</CodeGroup>
 
 ## Verify
 
@@ -38,5 +28,6 @@ python -c "import uniac; print(uniac.__version__)"
 
 ## Requirements
 
-- Python 3.10 or newer
-- Docker Desktop (required for `uniac sim`)
+- Python 3.11 or newer
+- Node 16 or newer (to install the CLI via npm)
+- Docker (required for `uniac dev`)

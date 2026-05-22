@@ -1,14 +1,12 @@
 ---
 title: "uniac install"
-description: "Install service dependencies."
+description: "Resolve dependencies from the local store."
 ---
-
-## Usage
 
 ```bash
 uniac install
 ```
 
-## Flags
+Resolves every entry in `uniac.json`'s `dependencies` array against the local store (`~/.uniac/`) and symlinks the resolved packages into `.uniac/packages/` for your project to import.
 
-## When to use it
+Run this after editing `dependencies`, or after a dependency you maintain locally has been rebuilt with [`uniac build`](/cli/build).

@@ -1,14 +1,22 @@
 ---
 title: "Projects"
-description: "How Uniac groups related services."
+description: "The platform-level container that owns your Systems."
 ---
 
-A **project** groups services that belong to the same application. Each project has its own namespace, deployments, and access controls.
+A **project** is the platform-level container for one or more deployed Systems owned by a single account. Create one when you first `uniac link` (or via the dashboard).
 
-## Creating a project
+A project has:
 
-## Project vs service
+- A user-facing **name**, unique within your account.
+- An opaque, globally-unique **slug** assigned at creation. The slug is the stable identifier in URLs, manifest references, and Platform API calls.
 
-## Sharing projects with teammates
+The project URL pattern is `https://{slug}.project.uniac.ai`; each Service within it gets its own [endpoint](/concepts/endpoints) under `https://{endpoint-id}.svc.uniac.ai`.
 
-See [Teams and members](/dashboard/teams-and-members).
+## Binding a local package to a project
+
+```bash
+uniac link            # bind for production deploys → .uniac/deploy.json
+uniac link --dev      # bind to a local dev stack → .uniac/deploy.dev.json
+```
+
+Both files are project-local and gitignored by default — they record the slug, not a name, so renames don't break them.

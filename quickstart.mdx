@@ -1,36 +1,21 @@
 ---
 title: "Quickstart"
-description: "Build and deploy your first Uniac service in under five minutes."
+description: "Scaffold, deploy, and call your first Uniac service."
 ---
 
-By the end of this guide you will have a running service deployed at `https://<your-endpoint>.svc.uniac.ai`.
+By the end you will have a deployed service reachable at `https://<endpoint-id>.svc.uniac.ai`.
 
 ## Prerequisites
 
-- Python 3.10 or newer
-- Docker Desktop (for the local simulator)
-- A Uniac account — sign up at [api.uniac.ai](https://api.uniac.ai)
+- Python 3.11 or newer
+- Node 16 or newer (to install the CLI via npm)
+- Docker (for `uniac dev`)
 
-## 1. Install the SDK and CLI
-
-<CodeGroup>
-
-```bash macOS / Linux
-pip install uniac
-curl -fsSL https://install.uniac.ai | sh
-```
-
-```bash Windows (PowerShell)
-pip install uniac
-iwr https://install.uniac.ai/ps | iex
-```
-
-</CodeGroup>
-
-Verify the install.
+## 1. Install the CLI and SDK
 
 ```bash
-uniac --version
+npm i -g @uniac/cli
+pip install uniac
 ```
 
 ## 2. Log in
@@ -39,72 +24,79 @@ uniac --version
 uniac auth login
 ```
 
-This opens a browser window and completes the OAuth flow.
+This opens a browser to complete the sign-in flow and writes a token to `~/.uniac/auth.json`.
 
-## 3. Create a new service
+## 3. Scaffold a project
 
 ```bash
-uniac init my-first-service
+uniac init
 cd my-first-service
 ```
 
-`uniac init` scaffolds a minimal Python service. Open the generated file and add a handler.
+`uniac init` is interactive — pick `app` for the kind, Python for the language, and accept the default entrypoint. The result is a `uniac.json` manifest and a starter `app.py`.
 
-```python service.py
-from uniac import FastAPIService
+Replace `app.py` with a minimal System:
 
-class Greeter(FastAPIService):
-    def routes(self):
-        @self.get("/hello")
-        def hello(name: str = "world"):
-            return {"message": f"Hello, {name}!"}
+```python app.py
+from uniac import System, load
+
+class MyFirstService(System):
+    def __init__(self, greeting: str = "hello"):
+        self.greeting = greeting
+
+service = load(MyFirstService)
+
+# Your handler — Uniac runs whatever your entrypoint command starts.
+# For a FastAPI app:
+from fastapi import FastAPI
+api = FastAPI()
+
+@api.get("/hello")
+def hello(name: str = "world"):
+    return {"message": f"{service.greeting}, {name}!"}
+```
+
+Add a `requirements.txt`:
+
+```text requirements.txt
+fastapi
+uvicorn[standard]
 ```
 
 ## 4. Run it locally
 
 ```bash
-uniac sim
+uniac dev
 ```
 
-The simulator starts your service in a container. Call it from another terminal.
-
-```bash
-curl http://localhost:8000/hello?name=there
-# {"message":"Hello, there!"}
-```
+The simulator starts a local Docker stack and opens the dashboard. Send `GET /hello?name=cloud` from the dashboard's request panel.
 
 ## 5. Deploy
 
 ```bash
-uniac build
+uniac link
 uniac deploy
 ```
 
-Once the deploy completes, the CLI prints the public endpoint.
+`uniac link` binds the project to a remote Uniac project (created on the fly if it doesn't exist). `uniac deploy` builds, pushes the image, and registers the deployment. The CLI prints the public URL on success:
 
 ```
-Deployed: https://greeter-ab12cd.svc.uniac.ai
+Deployed: https://ab12cd.svc.uniac.ai
 ```
 
-Hit it from anywhere.
+Call it:
 
 ```bash
-curl https://greeter-ab12cd.svc.uniac.ai/hello?name=cloud
+curl https://ab12cd.svc.uniac.ai/hello?name=cloud
 ```
 
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Your first service" icon="book-open" href="/get-started/your-first-service">
-    A deeper walkthrough with explanations.
+    The same flow with deeper explanations.
   </Card>
-  <Card title="Service-to-service calls" icon="diagram-project" href="/services/service-to-service">
-    Have one service call another.
-  </Card>
-  <Card title="Add AI primitives" icon="sparkles" href="/services/ai-primitives">
-    Use Uniac's LLM building blocks.
-  </Card>
-  <Card title="Custom domains" icon="globe" href="/deploy/custom-domains">
-    Map your own domain to a deployed service.
+  <Card title="Concepts" icon="cube" href="/concepts/services">
+    Services, Systems, Nodes, projects, deployments.
   </Card>
 </CardGroup>

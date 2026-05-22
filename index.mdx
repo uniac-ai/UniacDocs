@@ -1,41 +1,33 @@
 ---
 title: "Uniac"
-description: "An LLM-native backend framework for building and deploying Python services."
+description: "Build and deploy distributed services in Python."
 ---
 
-Uniac is a Python framework and managed platform for building, running, and deploying backend services with AI primitives built in. Write a service as a Python class, test it locally with the simulator, and deploy it to the cloud with a single command.
+Uniac is a Python framework and managed platform for assembling distributed services from reusable building blocks. Declare a service's dependencies as typed class annotations; Uniac builds, deploys, and wires the topology end-to-end.
 
 <CardGroup cols={2}>
-  <Card
-    title="Quickstart"
-    icon="rocket"
-    href="/quickstart"
-  >
-    Install the CLI, write your first service, and deploy it in under five minutes.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install, scaffold, deploy. About five minutes.
   </Card>
-  <Card
-    title="Your first service"
-    icon="code"
-    href="/get-started/your-first-service"
-  >
-    A step-by-step walkthrough of the full build → simulate → deploy loop.
+  <Card title="Your first service" icon="code" href="/get-started/your-first-service">
+    A guided walkthrough with explanations at each step.
   </Card>
 </CardGroup>
 
-## Learn the basics
+## Concepts
 
 <CardGroup cols={2}>
-  <Card title="Core concepts" icon="book" href="/concepts/services">
-    Services, endpoints, projects, and deployments.
+  <Card title="Services and Systems" icon="cube" href="/concepts/services">
+    The two kinds of Uniac package: reusable building blocks and deployable compositions.
   </Card>
-  <Card title="Writing services" icon="pen-to-square" href="/services/fastapi-service">
-    Define handlers, routes, and service-to-service calls.
+  <Card title="Nodes" icon="circle-nodes" href="/concepts/nodes">
+    How a service declares and consumes its dependencies.
   </Card>
-  <Card title="Run locally" icon="laptop-code" href="/local/simulator">
-    Iterate with the local simulator.
+  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
+    The `uniac.json` schema.
   </Card>
-  <Card title="Deploy" icon="cloud-arrow-up" href="/deploy/first-deploy">
-    Ship your service to the cloud.
+  <Card title="Deployments" icon="rocket-launch" href="/concepts/deployments">
+    Versions, replicas, and the endpoint URL.
   </Card>
 </CardGroup>
 
@@ -43,28 +35,9 @@ Uniac is a Python framework and managed platform for building, running, and depl
 
 <CardGroup cols={2}>
   <Card title="SDK reference" icon="python" href="/sdk/overview">
-    The Python `uniac` package.
+    Every public class and function in the `uniac` Python package.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli/overview">
     Every `uniac` command and flag.
-  </Card>
-</CardGroup>
-
-## Recipes
-
-Short, copy-pasteable patterns for common tasks.
-
-<CardGroup cols={2}>
-  <Card title="Call Claude from a service" icon="sparkles" href="/recipes/call-anthropic">
-    Stream completions from Anthropic's API.
-  </Card>
-  <Card title="Receive webhooks" icon="bolt" href="/recipes/webhook-receiver">
-    Expose a handler that accepts webhook deliveries.
-  </Card>
-  <Card title="Run a background job" icon="clock" href="/recipes/background-job">
-    Long-running work that outlives a single request.
-  </Card>
-  <Card title="Multi-service apps" icon="diagram-project" href="/recipes/multi-service-app">
-    Two services communicating with `ServiceClient`.
   </Card>
 </CardGroup>

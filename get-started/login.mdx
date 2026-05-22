@@ -1,28 +1,26 @@
 ---
 title: "Log in"
-description: "Authenticate the uniac CLI with your Uniac account."
+description: "Authenticate the uniac CLI."
 ---
-
-Before you can deploy, you need to log in.
 
 ```bash
 uniac auth login
 ```
 
-The CLI opens a browser window to complete the OAuth flow. If you're on a headless machine, the CLI prints a code and URL you can open on another device.
+The CLI opens a browser to complete the sign-in flow and writes a long-lived JWT to `~/.uniac/auth.json` (mode 0600). Keep that file private — anyone with it can deploy on your behalf.
 
-## Check who you're logged in as
-
-```bash
-uniac auth whoami
-```
-
-## Log out
+## Headless machines
 
 ```bash
-uniac auth logout
+uniac auth login --no-browser
 ```
 
-## Where credentials live
+The CLI prints the URL; open it on another device, complete sign-in, and paste the returned token.
 
-The CLI stores your access token in `~/.uniac/credentials`. Keep this file private — anyone with it can deploy on your behalf.
+## Inspect or log out
+
+```bash
+uniac auth status     # whoami + token expiry
+uniac auth token      # print the bearer token (for scripts)
+uniac auth logout     # delete ~/.uniac/auth.json
+```

@@ -46,90 +46,26 @@
             ]
           },
           {
-            "group": "Core concepts",
+            "group": "Concepts",
             "pages": [
               "concepts/services",
-              "concepts/endpoints",
+              "concepts/nodes",
+              "concepts/manifest",
               "concepts/projects",
-              "concepts/deployments"
-            ]
-          },
-          {
-            "group": "Writing services",
-            "pages": [
-              "services/fastapi-service",
-              "services/routing-and-handlers",
-              "services/service-to-service",
-              "services/ai-primitives",
-              "services/configuration",
-              "services/secrets",
-              "services/dependencies"
-            ]
-          },
-          {
-            "group": "Run locally",
-            "pages": [
-              "local/simulator",
-              "local/iterating",
-              "local/multi-service"
-            ]
-          },
-          {
-            "group": "Deploy",
-            "pages": [
-              "deploy/first-deploy",
-              "deploy/environments",
-              "deploy/custom-domains",
-              "deploy/rollout-and-rollback"
-            ]
-          },
-          {
-            "group": "Operate",
-            "pages": [
-              "operate/logs",
-              "operate/metrics",
-              "operate/scaling",
-              "operate/troubleshooting"
+              "concepts/deployments",
+              "concepts/endpoints"
             ]
           },
           {
             "group": "Dashboard",
             "pages": [
-              "dashboard/overview",
-              "dashboard/teams-and-members",
-              "dashboard/billing"
-            ]
-          },
-          {
-            "group": "Recipes",
-            "pages": [
-              "recipes/call-anthropic",
-              "recipes/call-openai",
-              "recipes/background-job",
-              "recipes/webhook-receiver",
-              "recipes/scheduled-task",
-              "recipes/multi-service-app"
+              "dashboard/overview"
             ]
           },
           {
             "group": "Platform API",
             "pages": [
               "platform-api/overview"
-            ]
-          },
-          {
-            "group": "Account",
-            "pages": [
-              "account/pricing",
-              "account/limits"
-            ]
-          },
-          {
-            "group": "AI editor tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
             ]
           }
         ]
@@ -141,12 +77,12 @@
             "group": "Python SDK",
             "pages": [
               "sdk/overview",
-              "sdk/fastapi-service",
               "sdk/service",
-              "sdk/service-client",
-              "sdk/ai-primitives",
-              "sdk/exceptions",
-              "sdk/changelog"
+              "sdk/system",
+              "sdk/node",
+              "sdk/nodespec",
+              "sdk/load",
+              "sdk/exceptions"
             ]
           }
         ]
@@ -158,13 +94,13 @@
             "group": "uniac CLI",
             "pages": [
               "cli/overview",
-              "cli/auth",
-              "cli/config",
               "cli/init",
               "cli/build",
               "cli/install",
-              "cli/sim",
+              "cli/link",
               "cli/deploy",
+              "cli/auth",
+              "cli/dev",
               "cli/exit-codes"
             ]
           }
@@ -175,12 +111,12 @@
       "anchors": [
         {
           "anchor": "Dashboard",
-          "href": "https://api.uniac.ai",
+          "href": "https://uniac.ai",
           "icon": "gauge"
         },
         {
           "anchor": "GitHub",
-          "href": "https://github.com/uniac",
+          "href": "https://github.com/uniac-ai/Uniac",
           "icon": "github"
         }
       ]
@@ -193,6 +129,10 @@
   "navbar": {
     "links": [
       {
+        "label": "Pricing",
+        "href": "https://uniac.ai/pricing"
+      },
+      {
         "label": "Support",
         "href": "mailto:support@uniac.ai"
       }
@@ -200,7 +140,7 @@
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://api.uniac.ai"
+      "href": "https://uniac.ai"
     }
   },
   "contextual": {
@@ -218,7 +158,7 @@
   "footer": {
     "socials": {
       "x": "https://x.com/uniac",
-      "github": "https://github.com/uniac"
+      "github": "https://github.com/uniac-ai/Uniac"
     }
   }
 }

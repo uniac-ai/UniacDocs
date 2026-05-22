@@ -1,16 +1,24 @@
 ---
 title: "uniac init"
-description: "Scaffold a new Uniac service."
+description: "Scaffold a new Uniac package."
 ---
 
-## Usage
-
 ```bash
-uniac init <name>
+uniac init
 ```
 
-## Flags
+Interactive wizard. Prompts for:
 
-## What gets scaffolded
+- **Name** — defaults to the current directory's basename.
+- **Kind** — `app` (deployable [System](/concepts/services)) or `lib` (reusable [Service](/concepts/services)).
+- **Language** — `python` (only option today).
+- **Entrypoint** — `module:ClassName`, e.g. `app:Greeter`.
 
-## Templates
+The result is two files in the current directory:
+
+```
+uniac.json     # the manifest (see Concepts → The manifest)
+<entrypoint>   # a starter Python file with your class declared
+```
+
+Run from a fresh directory; the wizard refuses to overwrite an existing `uniac.json`.

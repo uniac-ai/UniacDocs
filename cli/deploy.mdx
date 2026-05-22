@@ -1,20 +1,28 @@
 ---
 title: "uniac deploy"
-description: "Deploy a service to the Uniac cloud."
+description: "Build, push, and register a deployment."
 ---
-
-## Usage
 
 ```bash
 uniac deploy
 ```
 
+Builds the container image for the current Uniac System, pushes it to the platform registry, and registers a new [deployment](/concepts/deployments) version. Requires a `.uniac/deploy.json` written by [`uniac link`](/cli/link).
+
+On success, the CLI prints the deployed URL:
+
+```
+Deployed: https://ab12cd.svc.uniac.ai
+```
+
+The `endpoint-id` is stable across redeploys of the same Service.
+
 ## Flags
 
-## Output
+| Flag           | Behavior                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| `--dry-run`    | Show the deployment plan and exit without pushing or registering.                        |
+| `--dev`        | Deploy against the local dev stack (uses `.uniac/deploy.dev.json`).                      |
+| `--dev=<slug>` | Same as `--dev`, but targets a specific named dev stack.                                 |
 
-## Rolling back
-
-```bash
-uniac deploy --rollback
-```
+There is no `--rollback` flag. To revert, use the dashboard or the [Platform API](/platform-api/overview) to change which version is desired.

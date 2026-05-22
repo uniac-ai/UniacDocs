@@ -1,22 +1,49 @@
 ---
-title: "Services"
-description: "The core unit of work in Uniac."
+title: "Services and Systems"
+description: "The two kinds of Uniac package."
 ---
 
-A **service** is the core unit of work in Uniac. It's a Python class that handles requests, runs in a container, and scales on the Uniac cloud.
+A Uniac package is either a **Service** or a **System**. Both subclass marker classes from the `uniac` SDK and declare their dependencies as class-level type annotations.
 
-## What a service looks like
+| Kind  | SDK base class    | Purpose                                                          |
+| ----- | ----------------- | ---------------------------------------------------------------- |
+| `lib` | `uniac.Service`   | Reusable building block, consumed by other Services or Systems. |
+| `app` | `uniac.System`    | Deployable composition. Each deploy targets one System.          |
 
-## Service types
+The `kind` field in [`uniac.json`](/concepts/manifest) selects which one applies.
 
-### FastAPIService
+## Declaration shape
 
-### Service (lower-level)
+A Service or System is a plain Python class. Class-level annotations of type [`Node`](/concepts/nodes) declare what it depends on; `__init__` initializes them.
 
-## Lifecycle
+```python
+from uniac import System, load
+from db import Db        # generated stub for a published Service
+from cache import Cache  # generated stub for a published Service
 
-## Related
+class Api(System):
+    db: Db
+    cache: Cache
 
-- [Endpoints](/concepts/endpoints) — how requests reach your service
-- [Projects](/concepts/projects) — how services are grouped
-- [Deployments](/concepts/deployments) — how versions of a service are released
+    def __init__(self, log_level: str = "info"):
+        self.db = Db()
+        self.cache = Cache()
+        self.log_level = log_level
+
+service = load(Api)
+```
+
+`load()` constructs the instance, validates that every annotated `Node` slot is filled, and hydrates each `Node`'s `.url` from the deploy-time wiring. See [`load`](/sdk/load).
+
+## Service vs System: when to use which
+
+- Use **Service** (`kind=lib`) for code you want other packages to consume — a database client, a logger, a feature flag reader. Publish it with `uniac build`.
+- Use **System** (`kind=app`) for the unit you deploy. A System pulls Services together and exposes the public surface (HTTP, jobs, scheduled work).
+
+A Service can depend on other Services. A System can depend on Services. Services never depend on Systems.
+
+## No magic
+
+The framework does **not** auto-instantiate annotated Nodes. The annotation is a declaration; the value comes from your `__init__`. `load()` validates after construction and raises [`UniacValidationError`](/sdk/exceptions) if any slot is unset or holds the wrong type.
+
+There is no base-class `__init__` to call. If you don't need init args, omit `__init__` entirely.

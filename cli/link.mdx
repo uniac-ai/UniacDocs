@@ -1,0 +1,20 @@
+---
+title: "uniac link"
+description: "Bind a project to a remote (or local-dev) Uniac project."
+---
+
+```bash
+uniac link            # bind for production deploys
+uniac link --dev      # bind to a local dev stack
+```
+
+Records the chosen [project](/concepts/projects) slug to a project-local file:
+
+| Flag       | File                       | Used by               |
+| ---------- | -------------------------- | --------------------- |
+| (default)  | `.uniac/deploy.json`       | [`uniac deploy`](/cli/deploy) |
+| `--dev`    | `.uniac/deploy.dev.json`   | [`uniac dev`](/cli/dev)       |
+
+Both files are gitignored by default. They record the slug, not the name, so renaming the project doesn't break the link.
+
+Re-running `uniac link` lets you re-bind to a different project or switch from local-dev to remote.

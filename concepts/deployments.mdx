@@ -1,17 +1,24 @@
 ---
 title: "Deployments"
-description: "Versions of a service running in the cloud."
+description: "Versioned snapshots of a Service."
 ---
 
-A **deployment** is a specific version of a service running on the Uniac cloud. Every time you run `uniac deploy`, a new deployment is created.
+A **deployment** is a single versioned snapshot of a Service. Each `uniac deploy` creates a new deployment with an incremented version number; older versions remain in the registry.
 
-## What a deployment contains
+The platform's source of truth for "which version is live" is the deployment's **desired replica count**:
 
-## Deployment states
+- `NULL` — never promoted; image is in the registry but no instances are scheduled.
+- `0` — drained; was live, now scaled to zero.
+- `N ≥ 1` — active; the reconciler converges running instances to N.
 
-## Viewing deployments
+When you deploy a new version, the platform sets the new version's replica count and zeros out the previous one. The `endpoint-id` for the Service stays stable across all versions, so URLs don't change.
 
-## Related
+## Rolling back
 
-- [Rollout and rollback](/deploy/rollout-and-rollback)
-- [First deploy](/deploy/first-deploy)
+There is no `uniac` command for rollback. To revert to a prior version, use the dashboard or the [Platform API](/platform-api/overview) to change which version's `desired_replica_count` is non-zero.
+
+## Scaling
+
+Scaling is manual. POST to `/api/services/{service_id}/scale` with `{"target_replica_count": N}`. The platform enqueues a task and the reconciler converges the running instances.
+
+There is no auto-scaling and no per-tenant ceiling beyond a system-wide sanity cap of 100.

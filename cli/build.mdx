@@ -1,16 +1,20 @@
 ---
 title: "uniac build"
-description: "Build a container image for your service."
+description: "Publish a lib package to the local store."
 ---
-
-## Usage
 
 ```bash
 uniac build
 ```
 
-## Flags
+Reads the current directory's [`uniac.json`](/concepts/manifest), introspects the entrypoint class, and publishes the package to the local store:
 
-## What gets included
+```
+~/.uniac/objects       # content-addressable artifacts
+~/.uniac/refs          # name → object hash
+~/.uniac/projections   # generated Node stubs consumers import
+```
 
-## Build cache
+Refuses `kind=app` — for Systems, use [`uniac deploy`](/cli/deploy) instead.
+
+After `uniac build`, any project that lists this lib under `dependencies` and runs [`uniac install`](/cli/install) sees the new version.

@@ -1,14 +1,14 @@
 ---
 title: "Endpoints"
-description: "How deployed services receive traffic."
+description: "How requests reach a deployed Service."
 ---
 
-Every deployed service has a public endpoint of the form `https://<endpoint-id>.svc.uniac.ai`.
+Every deployed Service has one public URL of the form:
 
-## Endpoint structure
+```
+https://<endpoint-id>.svc.uniac.ai
+```
 
-## Stable vs preview endpoints
+The `endpoint-id` is a 20-character opaque token assigned the first time a Service deploys in a project. It is **stable across redeploys** of that Service: subsequent versions reuse the same id, so clients holding the URL stay connected.
 
-## Custom domains
-
-See [Custom domains](/deploy/custom-domains) for mapping your own domain to a service.
+Custom domains, preview URLs, and per-environment endpoints are not part of the platform today.

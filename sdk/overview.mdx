@@ -3,18 +3,23 @@ title: "SDK overview"
 description: "The uniac Python package."
 ---
 
-The `uniac` Python package is the SDK you use to write services.
-
 ## Install
 
 ```bash
 pip install uniac
 ```
 
-## Import
+## Public exports
 
 ```python
-from uniac import FastAPIService, Service, ServiceClient
+from uniac import (
+    Service,      # base class for kind=lib packages
+    System,       # base class for kind=app packages
+    Node,         # base class for dependency references
+    NodeSpec,     # shared parent of Service and System
+    load,         # construct, validate, and hydrate a NodeSpec subclass
+    LoadError,    # raised by load() on init or coercion failure
+)
 ```
 
 ## Version
@@ -26,9 +31,9 @@ uniac.__version__
 
 ## Reference
 
-- [FastAPIService](/sdk/fastapi-service)
-- [Service](/sdk/service)
-- [ServiceClient](/sdk/service-client)
-- [AI primitives](/sdk/ai-primitives)
-- [Exceptions](/sdk/exceptions)
-- [Changelog](/sdk/changelog)
+- [`Service`](/sdk/service) — kind=lib marker class.
+- [`System`](/sdk/system) — kind=app marker class.
+- [`Node`](/sdk/node) — runtime reference to a deployed dependency.
+- [`NodeSpec`](/sdk/nodespec) — internals shared by `Service` and `System`.
+- [`load`](/sdk/load) — the one runtime entrypoint users call.
+- [Exceptions](/sdk/exceptions) — `LoadError`, `UniacValidationError`.

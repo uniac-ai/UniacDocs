@@ -1,20 +1,118 @@
 ---
 title: "Your first service"
-description: "Build a real service end-to-end — scaffold, write handlers, simulate, and deploy."
+description: "Build, simulate, and deploy a real Uniac System end-to-end."
 ---
 
-This guide walks through building a complete Uniac service with explanations at each step. If you want to move faster, see the [Quickstart](/quickstart).
+This walkthrough builds a complete Uniac System with explanations at each step. For a faster pass without context, see the [Quickstart](/quickstart).
 
-## 1. Scaffold the project
+## 1. Scaffold
 
-## 2. Write a handler
+```bash
+uniac init
+```
+
+The wizard prompts for a name, kind, language, and entrypoint. Pick `app` for a deployable System.
+
+The result is two files: `uniac.json` (the [manifest](/concepts/manifest)) and a starter Python file matching your entrypoint.
+
+## 2. Write the System
+
+A **System** is a deployable composition. It subclasses `uniac.System` and declares any dependencies as class-level annotations of type `Node`. Initialize them in `__init__`.
+
+```python app.py
+from uniac import System, load
+
+class Greeter(System):
+    def __init__(self, greeting: str = "hello"):
+        self.greeting = greeting
+
+service = load(Greeter)
+```
+
+`load()` reads `UNIAC_INIT_*` environment variables into `__init__` keyword args, constructs the instance, and validates that every annotated `Node` is set.
+
+Wire up an HTTP handler — Uniac runs whatever your entrypoint command starts, so any framework works.
+
+```python app.py
+from fastapi import FastAPI
+
+api = FastAPI()
+
+@api.get("/hello")
+def hello(name: str = "world"):
+    return {"message": f"{service.greeting}, {name}!"}
+```
 
 ## 3. Run it in the simulator
 
-## 4. Add a second endpoint
+```bash
+uniac dev
+```
+
+The simulator builds the container, starts it, and opens the dashboard pointed at your local stack. Send `GET /hello?name=there` from the dashboard's request panel.
+
+## 4. Add a dependency
+
+Suppose you want a reusable logger. Make it a `Service` (kind=lib) in its own project:
+
+```python logger/app.py
+from uniac import Service
+
+class Logger(Service):
+    def info(self, msg: str) -> None:
+        print(f"[info] {msg}")
+```
+
+`uniac build` in `logger/` publishes it to your local store. Then in `greeter/`, list it under `dependencies` in `uniac.json` and run `uniac install`. Declare and use it:
+
+```python app.py
+from uniac import System, Node, load
+from logger import Logger  # generated stub
+
+class Greeter(System):
+    logger: Logger
+
+    def __init__(self, greeting: str = "hello"):
+        self.greeting = greeting
+        self.logger = Logger()
+```
+
+In deployed mode, `self.logger.url` points at the live logger service.
 
 ## 5. Deploy
 
-## 6. Inspect your deployment
+```bash
+uniac link      # bind to a remote project
+uniac deploy
+```
+
+The CLI prints the deployed URL:
+
+```
+Deployed: https://ab12cd.svc.uniac.ai
+```
+
+<Info>
+  The `endpoint-id` (`ab12cd` above) is stable across redeploys of the same service.
+</Info>
+
+## 6. Inspect
+
+Open the [dashboard](https://uniac.ai) to see deployments, replicas, and instance state.
 
 ## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Concepts" icon="cube" href="/concepts/services">
+    Services, Systems, Nodes, projects, deployments.
+  </Card>
+  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
+    Every field in `uniac.json`.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/cli/overview">
+    Every command and flag.
+  </Card>
+  <Card title="SDK reference" icon="python" href="/sdk/overview">
+    `Service`, `System`, `Node`, `load`, and friends.
+  </Card>
+</CardGroup>

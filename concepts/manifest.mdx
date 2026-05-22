@@ -1,0 +1,47 @@
+---
+title: "The manifest"
+description: "The uniac.json schema."
+---
+
+Every Uniac package has a `uniac.json` at its root. The CLI reads it on `build`, `install`, `link`, `dev`, and `deploy`.
+
+## Required fields
+
+| Field         | Type   | Purpose                                                                                              |
+| ------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `name`        | string | Package name. Defaults to the directory basename if omitted.                                         |
+| `kind`        | string | `"lib"` or `"app"`. See [Services and Systems](/concepts/services).                                  |
+| `language`    | string | Runtime language. Today: `"python"` only.                                                            |
+| `entrypoint`  | string | `"module:ClassName"` — the `Service` or `System` class the build-time introspect walks.              |
+
+## Optional fields
+
+| Field                  | Type                | Purpose                                                                                                                       |
+| ---------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `dependencies`         | string[]            | Peer Service names resolved from the local store on `uniac install`.                                                          |
+| `build.command`        | string[]            | Container CMD as a JSON exec-form array. Auto-derived from `language` + `entrypoint` if omitted.                              |
+| `build.baseImage`      | string              | Override the default base image (`python:3.11-slim` for Python).                                                              |
+| `build.systemPackages` | string[]            | `apt-get` packages installed during build.                                                                                    |
+| `init`                 | object              | Map of `__init__` arg names to default values. Forwarded as `UNIAC_INIT_<UPPERCASE_NAME>` env vars at deploy time.            |
+
+## Example
+
+```json uniac.json
+{
+  "name": "greeter",
+  "kind": "app",
+  "language": "python",
+  "entrypoint": "app:Greeter",
+  "dependencies": ["logger", "feature-flags"],
+  "build": {
+    "command": ["uvicorn", "app:api", "--host", "0.0.0.0", "--port", "8080"],
+    "baseImage": "python:3.12-slim"
+  },
+  "init": {
+    "greeting": "hello",
+    "log_level": "info"
+  }
+}
+```
+
+`init` values are loaded into your `__init__` keyword args by [`load()`](/sdk/load).
