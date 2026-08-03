@@ -1,21 +1,20 @@
 ---
 title: "Quickstart"
-description: "Scaffold, deploy, and call your first Uniac service."
+description: "Scaffold, plan, and deploy your first Uniac service."
 ---
 
-By the end you will have a deployed service reachable at `https://<endpoint-id>.svc.uniac.ai`.
+By the end you will have a container deployed and reachable at a public URL.
 
 ## Prerequisites
 
-- Python 3.11 or newer
-- Node 16 or newer (to install the CLI via npm)
-- Docker (for `uniac dev`)
+- Node 18 or newer (to install the CLI via npm)
+- Docker, running (for `uniac deploy`)
+- A prebuilt container image to deploy — Uniac deploys images, it does not build them
 
-## 1. Install the CLI and SDK
+## 1. Install the CLI
 
 ```bash
 npm i -g @uniac/cli
-pip install uniac
 ```
 
 ## 2. Log in
@@ -24,52 +23,56 @@ pip install uniac
 uniac auth login
 ```
 
-This opens a browser to complete the sign-in flow and writes a token to `~/.uniac/auth.json`.
+This opens a browser to complete the sign-in flow and stores a token in
+`~/.uniac/auth.json`.
 
-## 3. Scaffold a project
+## 3. Scaffold a manifest
 
 ```bash
 uniac init
-cd my-first-service
 ```
 
-`uniac init` is interactive — pick `app` for the kind, Python for the language, and accept the default entrypoint. The result is a `uniac.json` manifest and a starter `app.py`.
+`uniac init` asks for a service name and writes `uniac.yaml`: one service plus
+the deployment that instantiates it. Set `image` to your own, or keep the
+scaffold's `nginx:alpine` to try the flow:
 
-Replace `app.py` with a minimal System:
-
-```python app.py
-from uniac import System, load
-
-class MyFirstService(System):
-    def __init__(self, greeting: str = "hello"):
-        self.greeting = greeting
-
-service = load(MyFirstService)
-
-# Your handler — Uniac runs whatever your entrypoint command starts.
-# For a FastAPI app:
-from fastapi import FastAPI
-api = FastAPI()
-
-@api.get("/hello")
-def hello(name: str = "world"):
-    return {"message": f"{service.greeting}, {name}!"}
+```yaml uniac.yaml
+runtime: yaml
+default: main
+resources:
+  hello:
+    type: service
+    image: nginx:alpine
+  main:
+    type: deployment
+    services:
+      hello:
+        from: hello
+        public_ports: [{ port: 80, type: http }]
 ```
 
-Add a `requirements.txt`:
-
-```text requirements.txt
-fastapi
-uvicorn[standard]
-```
-
-## 4. Run it locally
+## 4. Preview the deployable
 
 ```bash
-uniac dev
+uniac plan
 ```
 
-The simulator starts a local Docker stack and opens the dashboard. Send `GET /hello?name=cloud` from the dashboard's request panel.
+`plan` runs fully offline — no network, no credentials, no Docker — and prints
+what would ship:
+
+```text
+Deployment: main
+Artifact:   sha256:2e462d2fe307
+
+Building
+  pull nginx:alpine
+
+Deploying
+  hello  nginx:alpine  public: 80 (http)
+```
+
+Run it after every manifest edit; a manifest that fails `plan` fails `deploy`
+with the same error.
 
 ## 5. Deploy
 
@@ -78,25 +81,39 @@ uniac link
 uniac deploy
 ```
 
-`uniac link` binds the project to a remote Uniac project (created on the fly if it doesn't exist). `uniac deploy` builds, pushes the image, and registers the deployment. The CLI prints the public URL on success:
+`uniac link` binds the directory to a remote project — pick one from the list
+or create one. `uniac deploy` pulls the image with your local Docker, pushes it
+to the project registry, registers the deployment, and watches until it
+settles. The run ends with the state block:
 
-```
-Deployed: https://ab12cd.svc.uniac.ai
+```text
+project  my-app-e5f6g7h8
+
+service  hello  v1
+  image  nginx:alpine
+  digest  sha256:…
+  status  running (1/1)
+  endpoint  https://<allocated-host>.svc.uniac.ai → :80
 ```
 
-Call it:
+Open the `endpoint` address in a browser — that's your service.
+
+## 6. Observe
 
 ```bash
-curl https://ab12cd.svc.uniac.ai/hello?name=cloud
+uniac status
 ```
+
+Reports what the project is running right now, in the same shape as the deploy
+output. Run it any time; it changes nothing.
 
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Your first service" icon="book-open" href="/get-started/your-first-service">
-    The same flow with deeper explanations.
+    The same flow with explanations at each step.
   </Card>
-  <Card title="Concepts" icon="cube" href="/concepts/services">
-    Services, Systems, Nodes, projects, deployments.
+  <Card title="Multi-service systems" icon="diagram-project" href="/guides/multi-service">
+    Add a database and wire services together.
   </Card>
 </CardGroup>

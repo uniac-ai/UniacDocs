@@ -1,0 +1,62 @@
+---
+title: "Run output"
+description: "What deploy and status print, and where."
+---
+
+`uniac deploy` and `uniac status` end every run the same way: the final frame
+of the run on **stdout** — for `deploy`, the task tree of what the run did,
+then the **state block**; for `status`, the state block alone. Live progress
+narration goes to **stderr**, and only when stderr is a terminal, so piped and
+redirected output stays clean. `UNIAC_PROGRESS=1` forces narration on (useful
+in CI logs), `UNIAC_PROGRESS=0` forces it off; neither changes stdout.
+
+```text
+✓ deploy main  (41s)
+  ✓ plan  sha256:d84e9c1b2779
+  ✓ link
+  ✓ build  1 image(s)
+  ✓ push web
+  ✓ deploy web
+
+project  my-app-e5f6g7h8
+
+service  web  v4
+  image  mendhak/http-https-echo:31
+  digest  sha256:…
+  status  running (1/1)
+  endpoint  https://<allocated-host>.svc.uniac.ai → :8080
+```
+
+## The state block
+
+The state block is the run's account of the project: the same view the
+dashboard shows. An omitted line is an absent fact, never a hidden one — the
+block states only what the command actually established.
+
+| Line | Meaning |
+|---|---|
+| `project` | The linked project's slug. |
+| `service <name>  v<N>` | One block per service. `v<N>` numbers the serving deployment — "which state is this service in". |
+| `image` | The container source reference declared for it. Known only to a run that read the manifest. |
+| `digest` | The registry manifest digest this run published. |
+| `status` | The platform's word for what the service is doing, with observed/effective replicas: `running (1/1)`. |
+| `kind` | `stateful` for a service [capped at a single instance](/concepts/services#stateful-services); omitted otherwise. |
+| `endpoint` | `<address> → :<port>`: the whole string a client dials, then your own listen port that traffic lands on. The listen port appears nowhere in the address. |
+| `hold` | A platform-side reason the service is not converging. |
+| `warning` | A condition the run succeeded despite — a dangling [reference](/concepts/references#cross-deployment-references) lands here. |
+
+## Failures
+
+A failed run still prints its frame and whatever state it did establish, then
+an `error` section:
+
+```text
+error      auth
+  message  no access token found. Run `uniac auth login` or set UNIAC_ACCESS_TOKEN
+```
+
+| Line | Meaning |
+|---|---|
+| `error` | A code from the closed set in [Exit codes](/cli/exit-codes). Branch on it — never on the message, which is prose for people. |
+| `message` | What happened, for people. |
+| `retryable` | `yes` when re-running the identical command could succeed with nothing else changed. Prefer this judgment to your own heuristics. |

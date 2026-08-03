@@ -1,118 +1,151 @@
 ---
 title: "Your first service"
-description: "Build, simulate, and deploy a real Uniac System end-to-end."
+description: "Deploy a service end-to-end, with explanations at each step."
 ---
 
-This walkthrough builds a complete Uniac System with explanations at each step. For a faster pass without context, see the [Quickstart](/quickstart).
+This walkthrough deploys the same service as the [Quickstart](/quickstart),
+explaining what each piece is as you go. You need the CLI
+[installed](/get-started/installation) and a [login session](/get-started/login).
 
-## 1. Scaffold
+## Scaffold
 
 ```bash
+mkdir hello-uniac && cd hello-uniac
 uniac init
 ```
 
-The wizard prompts for a name, kind, language, and entrypoint. Pick `app` for a deployable System.
+`uniac init` asks for a service name and writes `uniac.yaml`. It refuses to
+overwrite an existing manifest.
 
-The result is two files: `uniac.json` (the [manifest](/concepts/manifest)) and a starter Python file matching your entrypoint.
-
-## 2. Write the System
-
-A **System** is a deployable composition. It subclasses `uniac.System` and declares any dependencies as class-level annotations of type `Node`. Initialize them in `__init__`.
-
-```python app.py
-from uniac import System, load
-
-class Greeter(System):
-    def __init__(self, greeting: str = "hello"):
-        self.greeting = greeting
-
-service = load(Greeter)
+```yaml uniac.yaml
+runtime: yaml
+default: main
+resources:
+  hello:
+    type: service
+    image: nginx:alpine  # any OCI image reference
+  main:
+    type: deployment
+    services:
+      hello: { from: hello }
 ```
 
-`load()` reads `UNIAC_INIT_*` environment variables into `__init__` keyword args, constructs the instance, and validates that every annotated `Node` is set.
+Two resources, two roles:
 
-Wire up an HTTP handler — Uniac runs whatever your entrypoint command starts, so any framework works.
+- `hello` is a **service** — a reusable definition of one workload's shape:
+  which image, which environment, which start command. A service is never
+  deployed directly.
+- `main` is a **deployment** — an instantiation of services. It is what
+  `uniac deploy` targets; `default: main` makes it the target when you don't
+  name one.
 
-```python app.py
-from fastapi import FastAPI
+The separation matters once systems grow: one definition can be instantiated
+many times, under different names, with different public exposure. See
+[Services](/concepts/services) and [Deployments](/concepts/deployments).
 
-api = FastAPI()
+## Claim public exposure
 
-@api.get("/hello")
-def hello(name: str = "world"):
-    return {"message": f"{service.greeting}, {name}!"}
+As scaffolded, the service would be reachable only from other services in the
+same project. Exposure is claimed on the *instance*, in the deployment:
+
+```yaml uniac.yaml {8}
+runtime: yaml
+default: main
+resources:
+  hello:
+    type: service
+    image: nginx:alpine
+  main:
+    type: deployment
+    services:
+      hello:
+        from: hello
+        public_ports: [{ port: 80, type: http }]
 ```
 
-## 3. Run it in the simulator
+`port` is the port your process listens on — nginx serves on 80. `type: http`
+asks the platform to terminate HTTPS on a public hostname and route requests to
+that port. See [Endpoints](/concepts/endpoints) for the `tcp` alternative.
+
+## Plan
 
 ```bash
-uniac dev
+uniac plan
 ```
 
-The simulator builds the container, starts it, and opens the dashboard pointed at your local stack. Send `GET /hello?name=there` from the dashboard's request panel.
+```text
+Deployment: main
+Artifact:   sha256:2e462d2fe307
 
-## 4. Add a dependency
+Building
+  pull nginx:alpine
 
-Suppose you want a reusable logger. Make it a `Service` (kind=lib) in its own project:
-
-```python logger/app.py
-from uniac import Service
-
-class Logger(Service):
-    def info(self, msg: str) -> None:
-        print(f"[info] {msg}")
+Deploying
+  hello  nginx:alpine  public: 80 (http)
 ```
 
-`uniac build` in `logger/` publishes it to your local store. Then in `greeter/`, list it under `dependencies` in `uniac.json` and run `uniac install`. Declare and use it:
+`plan` resolves the manifest into the **deployable** — the exact artifact the
+platform will consume — and prints its content digest. It runs fully offline
+and applies every rule decidable from the manifest alone, so it is the
+verification loop: edit, plan, read the error, fix. A manifest that passes
+`plan` cannot fail `deploy` on a manifest error.
 
-```python app.py
-from uniac import System, Node, load
-from logger import Logger  # generated stub
+The digest is content-addressed: reindenting the file or reordering resources
+does not change it. A digest that moved means the system actually changed.
 
-class Greeter(System):
-    logger: Logger
-
-    def __init__(self, greeting: str = "hello"):
-        self.greeting = greeting
-        self.logger = Logger()
-```
-
-In deployed mode, `self.logger.url` points at the live logger service.
-
-## 5. Deploy
+## Link and deploy
 
 ```bash
-uniac link      # bind to a remote project
+uniac link
 uniac deploy
 ```
 
-The CLI prints the deployed URL:
+`link` binds this directory to a remote project (stored in
+`.uniac/deploy.json` — gitignore it; it is per-checkout state, not source).
+`deploy` resolves the manifest again, pulls the image with your local Docker,
+pushes it to the project registry, registers the deployment, and polls until
+the platform settles — up to five minutes, every two seconds. The run ends
+with the state block:
 
+```text
+project  hello-uniac-a1b2c3d4
+
+service  hello  v1
+  image  nginx:alpine
+  digest  sha256:…
+  status  running (1/1)
+  endpoint  https://<allocated-host>.svc.uniac.ai → :80
 ```
-Deployed: https://ab12cd.svc.uniac.ai
+
+`v1` numbers the serving deployment. `endpoint` is the whole address to dial;
+`→ :80` names your own listen port that traffic lands on. Open the address —
+that's nginx, running on Uniac.
+
+## Observe, change, redeploy
+
+```bash
+uniac status
 ```
 
-<Info>
-  The `endpoint-id` (`ab12cd` above) is stable across redeploys of the same service.
-</Info>
+reports the same state block any time, and changes nothing.
 
-## 6. Inspect
+Edit the manifest — bump the image tag, add an `env` block — then:
 
-Open the [dashboard](https://uniac.ai) to see deployments, replicas, and instance state.
+```bash
+uniac plan      # check what changed: the digest moved
+uniac deploy    # ship it: the service moves to v2
+```
+
+A redeploy that leaves `public_ports` out keeps the exposure you already
+claimed; see [Endpoints](/concepts/endpoints) for the full redeploy semantics.
 
 ## Where to go next
 
 <CardGroup cols={2}>
-  <Card title="Concepts" icon="cube" href="/concepts/services">
-    Services, Systems, Nodes, projects, deployments.
-  </Card>
   <Card title="The manifest" icon="file-code" href="/concepts/manifest">
-    Every field in `uniac.json`.
+    Every field, and every rule `plan` enforces.
   </Card>
-  <Card title="CLI reference" icon="terminal" href="/cli/overview">
-    Every command and flag.
-  </Card>
-  <Card title="SDK reference" icon="python" href="/sdk/overview">
-    `Service`, `System`, `Node`, `load`, and friends.
+  <Card title="Multi-service systems" icon="diagram-project" href="/guides/multi-service">
+    Add a database and wire services together.
   </Card>
 </CardGroup>

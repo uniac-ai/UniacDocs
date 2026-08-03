@@ -1,43 +1,48 @@
 ---
 title: "Uniac"
-description: "Build and deploy distributed services in Python."
+description: "Describe a system in one file; the platform runs it."
 ---
 
-Uniac is a Python framework and managed platform for assembling distributed services from reusable building blocks. Declare a service's dependencies as typed class annotations; Uniac builds, deploys, and wires the topology end-to-end.
+Uniac is a cloud deployment platform. You describe a system of container-based
+services in one `uniac.yaml`, the `uniac` CLI resolves it into a deployable
+artifact, and the platform runs it: it injects each service's resolved
+environment, places containers on a private network addressable by service
+name, and allocates public addresses for whatever you claim. Nothing of Uniac
+ships inside your image — your container is entirely your own.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Install, scaffold, deploy. About five minutes.
   </Card>
   <Card title="Your first service" icon="code" href="/get-started/your-first-service">
-    A guided walkthrough with explanations at each step.
+    The same flow with explanations at each step.
   </Card>
 </CardGroup>
 
 ## Concepts
 
 <CardGroup cols={2}>
-  <Card title="Services and Systems" icon="cube" href="/concepts/services">
-    The two kinds of Uniac package: reusable building blocks and deployable compositions.
-  </Card>
-  <Card title="Nodes" icon="circle-nodes" href="/concepts/nodes">
-    How a service declares and consumes its dependencies.
-  </Card>
-  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
-    The `uniac.json` schema.
+  <Card title="Services" icon="cube" href="/concepts/services">
+    Reusable definitions of a workload's shape.
   </Card>
   <Card title="Deployments" icon="rocket-launch" href="/concepts/deployments">
-    Versions, replicas, and the endpoint URL.
+    Instantiations of services — the thing you deploy.
+  </Card>
+  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
+    The complete `uniac.yaml` schema.
+  </Card>
+  <Card title="References" icon="link" href="/concepts/references">
+    Wiring services together with `${{service.VAR}}`.
   </Card>
 </CardGroup>
 
 ## Reference
 
 <CardGroup cols={2}>
-  <Card title="SDK reference" icon="python" href="/sdk/overview">
-    Every public class and function in the `uniac` Python package.
-  </Card>
   <Card title="CLI reference" icon="terminal" href="/cli/overview">
-    Every `uniac` command and flag.
+    Every `uniac` command, its output, and its exit codes.
+  </Card>
+  <Card title="Multi-service systems" icon="diagram-project" href="/guides/multi-service">
+    Composing several services into one system.
   </Card>
 </CardGroup>

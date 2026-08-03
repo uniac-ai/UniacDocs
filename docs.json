@@ -49,11 +49,18 @@
             "group": "Concepts",
             "pages": [
               "concepts/services",
-              "concepts/nodes",
-              "concepts/manifest",
-              "concepts/projects",
               "concepts/deployments",
-              "concepts/endpoints"
+              "concepts/projects",
+              "concepts/references",
+              "concepts/endpoints",
+              "concepts/manifest"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/multi-service",
+              "guides/headless"
             ]
           },
           {
@@ -71,23 +78,6 @@
         ]
       },
       {
-        "tab": "SDK Reference",
-        "groups": [
-          {
-            "group": "Python SDK",
-            "pages": [
-              "sdk/overview",
-              "sdk/service",
-              "sdk/system",
-              "sdk/node",
-              "sdk/nodespec",
-              "sdk/load",
-              "sdk/exceptions"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "CLI Reference",
         "groups": [
           {
@@ -95,12 +85,17 @@
             "pages": [
               "cli/overview",
               "cli/init",
-              "cli/build",
-              "cli/install",
+              "cli/plan",
               "cli/link",
               "cli/deploy",
-              "cli/auth",
-              "cli/dev",
+              "cli/status",
+              "cli/auth"
+            ]
+          },
+          {
+            "group": "Contracts",
+            "pages": [
+              "cli/output",
               "cli/exit-codes"
             ]
           }
@@ -122,6 +117,19 @@
       ]
     }
   },
+  "redirects": [
+    { "source": "/sdk/overview", "destination": "/" },
+    { "source": "/sdk/service", "destination": "/concepts/services" },
+    { "source": "/sdk/system", "destination": "/concepts/deployments" },
+    { "source": "/sdk/node", "destination": "/concepts/references" },
+    { "source": "/sdk/nodespec", "destination": "/concepts/references" },
+    { "source": "/sdk/load", "destination": "/concepts/manifest" },
+    { "source": "/sdk/exceptions", "destination": "/cli/exit-codes" },
+    { "source": "/concepts/nodes", "destination": "/concepts/references" },
+    { "source": "/cli/build", "destination": "/cli/deploy" },
+    { "source": "/cli/dev", "destination": "/quickstart" },
+    { "source": "/cli/install", "destination": "/get-started/installation" }
+  ],
   "logo": {
     "light": "/logo/light.png",
     "dark": "/logo/dark.png"

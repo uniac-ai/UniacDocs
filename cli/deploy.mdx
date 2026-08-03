@@ -1,28 +1,59 @@
 ---
 title: "uniac deploy"
-description: "Build, push, and register a deployment."
+description: "Resolve, materialize, push, register, and watch it settle."
 ---
 
+import AuthPrereq from "/snippets/auth-prereq.mdx";
+
 ```bash
-uniac deploy
+uniac deploy [--dir <path>] [resource]
 ```
 
-Builds the container image for the current Uniac System, pushes it to the platform registry, and registers a new [deployment](/concepts/deployments) version. Requires a `.uniac/deploy.json` written by [`uniac link`](/cli/link).
+<AuthPrereq />
 
-On success, the CLI prints the deployed URL:
+Deploys a deployment to the linked remote project, in phases:
 
+1. **Plan** — the same offline resolution as [`uniac plan`](/cli/plan); a
+   manifest error stops the run before anything is sent.
+2. **Build** — pulls the declared image with your local Docker, using your own
+   Docker credentials exactly like `docker pull`. A private base image your
+   local Docker cannot pull fails here. Requires a running Docker daemon.
+3. **Push** — publishes the image to the project registry.
+4. **Register and settle** — registers the deployment, then polls the
+   platform every two seconds for up to five minutes and reports what the
+   service settled as. Registration alone is not success: the run succeeds
+   only when the platform lands the workload.
+
+The run ends with the [state block](/cli/output) — versions, status,
+endpoints, warnings — and exits with a [typed status](/cli/exit-codes).
+
+```text
+project  my-app-e5f6g7h8
+
+service  web  v4
+  image  mendhak/http-https-echo:31
+  digest  sha256:…
+  status  running (1/1)
+  endpoint  https://<allocated-host>.svc.uniac.ai → :8080
 ```
-Deployed: https://ab12cd.svc.uniac.ai
-```
 
-The `endpoint-id` is stable across redeploys of the same Service.
+## Targeting
 
-## Flags
+The named resource, else the manifest's `default`, else its only deployment.
+A deployment instantiating more than one service is rejected — compose
+[one deployment per service](/guides/multi-service) instead.
 
-| Flag           | Behavior                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `--dry-run`    | Show the deployment plan and exit without pushing or registering.                        |
-| `--dev`        | Deploy against the local dev stack (uses `.uniac/deploy.dev.json`).                      |
-| `--dev=<slug>` | Same as `--dev`, but targets a specific named dev stack.                                 |
+The target project comes from `.uniac/deploy.json` (written by
+[`uniac link`](/cli/link)) or the `UNIAC_PROJECT_URL` override. Without
+either, the CLI drops into an interactive project picker.
 
-There is no `--rollback` flag. To revert, use the dashboard or the [Platform API](/platform-api/overview) to change which version is desired.
+## After the run
+
+- A **warning** line in the state block means the deploy succeeded despite a
+  condition worth reading — a dangling
+  [cross-deployment reference](/concepts/references#cross-deployment-references)
+  shows up here with its variable left unset.
+- Interrupting the command does not cancel the platform-side work; run
+  [`uniac status`](/cli/status) to see where it landed.
+- When a deploy changes the values a service exports, the platform recreates
+  consuming services automatically — no second deploy needed.

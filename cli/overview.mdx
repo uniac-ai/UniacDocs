@@ -3,25 +3,36 @@ title: "CLI overview"
 description: "Every uniac command."
 ---
 
-The `uniac` CLI is a single Go binary that scaffolds, builds, links, deploys, and runs Uniac packages locally.
-
-For installation, see [Installation](/get-started/installation).
-
-## Global flags
-
-- `--help` — show help for a command.
-- `--version`, `-v` — print build metadata.
+The `uniac` CLI is a single Go binary, installed via
+[`npm i -g @uniac/cli`](/get-started/installation). Check the build with
+`uniac version` (also `--version` or `-v`).
 
 ## Commands
 
-| Command | Purpose |
-| ------- | ------- |
-| [`uniac init`](/cli/init)       | Scaffold `uniac.json` and a starter file in the current directory. |
-| [`uniac build`](/cli/build)     | Publish a `kind=lib` package to the local store.                   |
-| [`uniac install`](/cli/install) | Resolve `dependencies` and symlink them into `.uniac/packages/`.    |
-| [`uniac link`](/cli/link)       | Bind this project to a remote (or local-dev) Uniac project.        |
-| [`uniac deploy`](/cli/deploy)   | Build, push, and register a deployment.                            |
-| [`uniac auth`](/cli/auth)       | Sign in, inspect, or sign out.                                     |
-| [`uniac dev`](/cli/dev)         | Start, stop, or list local dev stacks.                             |
+| Command | Network | Docker | What it does |
+|---|---|---|---|
+| [`uniac init`](/cli/init) | no | no | Scaffold `uniac.yaml`: one service plus the deployment instantiating it. |
+| [`uniac plan`](/cli/plan) | no | no | Resolve a deployment and preview the deployable. The offline verification loop. |
+| [`uniac link`](/cli/link) | yes | no | Bind this directory to a remote project. |
+| [`uniac deploy`](/cli/deploy) | yes | yes | Resolve, materialize, push, register, then watch until the deployment settles. |
+| [`uniac status`](/cli/status) | yes | no | Report what the linked project is running. Changes nothing. |
+| [`uniac auth`](/cli/auth) | login only | no | Manage the stored session. |
+| `uniac version` | no | no | Print build metadata. |
 
-Exit codes are documented at [Exit codes](/cli/exit-codes).
+## Targeting
+
+`plan` and `deploy` target a **deployment**: the named resource, else the
+manifest's `default`, else its only deployment. Naming a service is an error —
+services are definitions, not deployable targets.
+
+`plan`, `deploy`, and `status` locate the project directory with `--dir`;
+`link` uses `-C`.
+
+## Two families of command
+
+`deploy` and `status` report state: each run ends with the
+[state block](/cli/output) on stdout and exits with a
+[typed status](/cli/exit-codes) from the closed set 0, 2–10, 70.
+
+`init`, `plan`, `link`, and `auth` are human-oriented: they print in their own
+shapes and exit `1` on error, `2` on a usage error.

@@ -25,4 +25,6 @@ Document what users can do today. If a feature isn't shipped, it doesn't appear 
 
 ## Canonical names
 
-Manifest: `uniac.json`. Local dev: `uniac dev`. Auth file: `~/.uniac/auth.json`. SDK exports: `Service`, `System`, `Node`, `NodeSpec`, `load`, `LoadError`. See Concepts and SDK reference for definitions.
+Manifest: `uniac.yaml`. Auth file: `~/.uniac/auth.json`. Link binding: `.uniac/deploy.json`. Resource types: `service`, `stateful`, `deployment`. There is no SDK and no build-from-source: users bring prebuilt OCI images, and the CLI (`init`, `plan`, `link`, `deploy`, `status`, `auth`, `version`) is the whole client surface. See Concepts and CLI reference for definitions.
+
+Verify CLI claims against the released binary before documenting them — `uniac plan` and every error in the manifest page reproduce offline.

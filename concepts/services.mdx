@@ -1,49 +1,62 @@
 ---
-title: "Services and Systems"
-description: "The two kinds of Uniac package."
+title: "Services"
+description: "Reusable definitions of a workload's shape."
 ---
 
-A Uniac package is either a **Service** or a **System**. Both subclass marker classes from the `uniac` SDK and declare their dependencies as class-level type annotations.
+A **service** is a reusable definition of one workload's shape: which image,
+which environment variables, which start command. It is declared once in
+`uniac.yaml` and instantiated by [deployments](/concepts/deployments) — a
+service is never directly deployable, and targeting one with `uniac plan` or
+`uniac deploy` is an error.
 
-| Kind  | SDK base class    | Purpose                                                          |
-| ----- | ----------------- | ---------------------------------------------------------------- |
-| `lib` | `uniac.Service`   | Reusable building block, consumed by other Services or Systems. |
-| `app` | `uniac.System`    | Deployable composition. Each deploy targets one System.          |
-
-The `kind` field in [`uniac.json`](/concepts/manifest) selects which one applies.
-
-## Declaration shape
-
-A Service or System is a plain Python class. Class-level annotations of type [`Node`](/concepts/nodes) declare what it depends on; `__init__` initializes them.
-
-```python
-from uniac import System, load
-from db import Db        # generated stub for a published Service
-from cache import Cache  # generated stub for a published Service
-
-class Api(System):
-    db: Db
-    cache: Cache
-
-    def __init__(self, log_level: str = "info"):
-        self.db = Db()
-        self.cache = Cache()
-        self.log_level = log_level
-
-service = load(Api)
+```yaml
+resources:
+  worker:
+    type: service
+    image: "mendhak/http-https-echo:31"
+    env:
+      GREETING: hello
 ```
 
-`load()` constructs the instance, validates that every annotated `Node` slot is filled, and hydrates each `Node`'s `.url` from the deploy-time wiring. See [`load`](/sdk/load).
+| Field | Required | Meaning |
+|---|---|---|
+| `image` | yes | OCI image reference. Prebuilt only — Uniac does not build from source. |
+| `env` | no | Environment variables. Values may embed [references](/concepts/references). |
+| `start_command` | no | Overrides the image CMD at the platform layer; the image is untouched. |
 
-## Service vs System: when to use which
+The full schema, including every rule enforced at plan time, is in
+[The manifest](/concepts/manifest).
 
-- Use **Service** (`kind=lib`) for code you want other packages to consume — a database client, a logger, a feature flag reader. Publish it with `uniac build`.
-- Use **System** (`kind=app`) for the unit you deploy. A System pulls Services together and exposes the public surface (HTTP, jobs, scheduled work).
+## No ports, no probes
 
-A Service can depend on other Services. A System can depend on Services. Services never depend on Systems.
+A service declares no port. The project's internal network is
+port-transparent: other services reach yours by instance name, on whatever
+port your process binds. Which port that is travels through `env`, not through
+the manifest. Liveness is observed on the container process, never by probing
+a port — health endpoints, retries, and readiness are yours to build.
 
-## No magic
+## Stateful services
 
-The framework does **not** auto-instantiate annotated Nodes. The annotation is a declaration; the value comes from your `__init__`. `load()` validates after construction and raises [`UniacValidationError`](/sdk/exceptions) if any slot is unset or holds the wrong type.
+`type: stateful` declares a service the platform caps at a single instance.
+The body is identical to `type: service` — same three fields — and it is
+instantiated by a deployment the same way. Use it for workloads where two
+concurrent instances would corrupt state, such as a database:
 
-There is no base-class `__init__` to call. If you don't need init args, omit `__init__` entirely.
+```yaml
+resources:
+  db:
+    type: stateful
+    image: postgres:16
+    env:
+      POSTGRES_PASSWORD: "change-me"
+```
+
+`uniac status` reports such a service with `kind stateful`.
+
+## The environment is exact
+
+At container start the platform injects exactly the resolved declared `env` —
+nothing more. The one fact the platform contributes is `${{self.host}}`, the
+service's internal hostname, and only if you reference it. There are no
+injected platform variables to discover, and nothing of Uniac runs inside your
+container.

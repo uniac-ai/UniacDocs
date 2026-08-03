@@ -1,0 +1,119 @@
+---
+title: "Multi-service systems"
+description: "Composing several services into one system."
+---
+
+A [project](/concepts/projects) is a flat list of services on one private
+network, each addressable by its instance name. That is the whole topology
+model. This guide shows how to shape a manifest around it.
+
+## Shape: one deployment per service
+
+`uniac deploy` rejects a deployment that instantiates more than one service,
+so a multi-service system is **several deployments in one manifest**, each
+shipping one service, deployed one at a time into the same project:
+
+```yaml uniac.yaml
+runtime: yaml
+default: api-web        # a deployment — naming a service here is an error
+resources:
+  # ---- definitions ----
+  db:
+    type: stateful
+    image: postgres:16
+    env:
+      POSTGRES_PASSWORD: "change-me"
+      DATABASE_URL: "postgres://postgres:${{self.POSTGRES_PASSWORD}}@${{self.host}}:5432/app"
+
+  api:
+    type: service
+    image: ghcr.io/acme/api:1.4.0
+    env:
+      DATABASE_URL: "${{database.DATABASE_URL}}"   # → the *instance* named `database`
+      PORT: "8080"
+
+  # ---- one deployment per service ----
+  database:
+    type: deployment
+    services:
+      database: { from: db }
+
+  api-web:
+    type: deployment
+    services:
+      api:
+        from: api
+        public_ports: [{ port: 8080, type: http }]
+```
+
+```bash
+uniac deploy database    # provider first
+uniac deploy api-web     # then the consumer
+```
+
+Keep deployment and instance names aligned with the service they ship, and
+keep every service in one manifest and one project — that is what makes the
+file the architecture diagram.
+
+## Wiring
+
+References name the deployed **instance**, never the definition:
+`${{database.DATABASE_URL}}` resolves against the instance named `database`,
+whatever resource it draws `from`.
+
+Because each service gets its own deployment, essentially every cross-service
+reference crosses deployments — which means it is
+[not checked locally](/concepts/references#cross-deployment-references). Spell
+instance names carefully, and confirm with `uniac status` that the provider is
+running under the name you referenced. A typo does not fail the deploy; it
+leaves the variable unset and puts a `warning` line in the state block.
+
+Deploy order is a convenience, not a requirement: after each successful deploy
+the platform recreates any service whose injected values changed, so a
+consumer deployed too early heals once its provider lands. Deploying the
+provider first just skips the broken window.
+
+## Exposure
+
+Claim `public_ports` only on the edge — here, the API. The database carries no
+claim: the internal network already reaches it by instance name, and
+[omitting the field on redeploys](/concepts/endpoints#redeploy-semantics-the-claim-set-is-tri-state)
+keeps whatever is already claimed.
+
+## What the platform does not provide
+
+The manifest schema rejects unknown keys, so an invented field fails `plan`
+rather than being ignored. Design around what is genuinely absent:
+
+- **No health checks or readiness probes.** Liveness is the container process.
+  Retries and readiness are your own.
+- **No dependency ordering.** There is no `depends_on`. A consumer must
+  tolerate a provider that is not up yet — propagation may restart it later
+  regardless.
+- **No build from source.** Services name prebuilt OCI images; build and
+  publish in your own pipeline.
+- **No secrets management.** `env` values are plaintext in the manifest.
+  Reference a provider's variable rather than repeating a credential, and keep
+  genuinely sensitive material out of a committed manifest.
+- **No volumes, replica counts, resource limits, or scaling controls** in the
+  manifest. Scale replicas from the [dashboard](/dashboard/overview).
+- **No multiple environments per project.** A second environment is a second
+  project, linked from a different checkout or selected with
+  `UNIAC_PROJECT_URL`.
+
+## Operating the system
+
+```bash
+uniac status             # every service: version, status, endpoints
+uniac status api         # one service
+```
+
+- `v1`, `v2`, … numbers the serving deployment — "is this service running what
+  I just shipped?"
+- `endpoint` lines carry the whole address to dial.
+- `hold` lines are platform-side reasons a service is not converging — a
+  platform condition, not a manifest bug.
+- A service the project runs appears whether or not the manifest still
+  describes it; retire services from the dashboard.
+
+See [Run output](/cli/output) for the full state block anatomy.

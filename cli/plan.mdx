@@ -1,0 +1,52 @@
+---
+title: "uniac plan"
+description: "Resolve a deployment and preview the deployable, offline."
+---
+
+```bash
+uniac plan [--json] [--full] [--dir <path>] [resource]
+```
+
+Resolves a deployment from `uniac.yaml` and previews the
+[deployable](/concepts/deployments#the-deployable-and-its-digest). `plan`
+needs no network, no credentials, and no Docker daemon; it applies
+[every rule decidable from the manifest alone](/concepts/manifest#what-fails-at-plan-time)
+and prints the resolved artifact plus its content digest.
+
+Run it after every manifest edit. `deploy` runs the same resolution first, so
+a manifest that fails `plan` fails `deploy` identically, before anything is
+sent anywhere.
+
+```text
+Deployment: api-web
+Artifact:   sha256:8c9506270527
+
+Building
+  pull ghcr.io/acme/api:1.4.0
+
+Deploying
+  api  ghcr.io/acme/api:1.4.0  public: 8080 (http)
+```
+
+## Flags
+
+| Flag | Effect |
+|---|---|
+| `--json` | Emit `{resource, digest, deployable}` as JSON instead of the text preview. |
+| `--full` | Include declaration details: env values, start command. |
+| `--dir <path>` | Project directory holding `uniac.yaml` (default `.`). |
+
+`--json` is the machine-readable path — the deployable is exactly what the
+platform would consume, and the digest is the release identity:
+
+```bash
+uniac plan --json | jq .digest
+```
+
+Identical inputs yield an identical digest: reordering resources, reindenting
+YAML, or reordering a claim list leaves it unchanged. A digest that moved
+means the system actually changed.
+
+## Exit status
+
+`0` on success, `1` on any manifest or resolution error, `2` on a usage error.

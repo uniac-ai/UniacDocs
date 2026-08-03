@@ -1,47 +1,116 @@
 ---
 title: "The manifest"
-description: "The uniac.json schema."
+description: "The complete uniac.yaml schema."
 ---
 
-Every Uniac package has a `uniac.json` at its root. The CLI reads it on `build`, `install`, `link`, `dev`, and `deploy`.
+`uniac.yaml` sits at the project root and is the whole static description of a
+system — one file, read by every command. Decoding is strict: an unknown key
+anywhere is a hard error, so the field tables below are exhaustive, and an
+invented field (`ports`, `replicas`, `volumes`, `depends_on`) fails the
+manifest rather than being ignored.
 
-## Required fields
+Everything on this page is enforced by `uniac plan`, which runs fully offline:
+write, plan, read the error, fix.
 
-| Field         | Type   | Purpose                                                                                              |
-| ------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| `name`        | string | Package name. Defaults to the directory basename if omitted.                                         |
-| `kind`        | string | `"lib"` or `"app"`. See [Services and Systems](/concepts/services).                                  |
-| `language`    | string | Runtime language. Today: `"python"` only.                                                            |
-| `entrypoint`  | string | `"module:ClassName"` — the `Service` or `System` class the build-time introspect walks.              |
+```yaml uniac.yaml
+runtime: yaml
+default: shop
+resources:
+  worker:
+    type: service
+    image: "mendhak/http-https-echo:31"
+    env:
+      GREETING: hello
 
-## Optional fields
-
-| Field                  | Type                | Purpose                                                                                                                       |
-| ---------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `dependencies`         | string[]            | Peer Service names resolved from the local store on `uniac install`.                                                          |
-| `build.command`        | string[]            | Container CMD as a JSON exec-form array. Auto-derived from `language` + `entrypoint` if omitted.                              |
-| `build.baseImage`      | string              | Override the default base image (`python:3.11-slim` for Python).                                                              |
-| `build.systemPackages` | string[]            | `apt-get` packages installed during build.                                                                                    |
-| `init`                 | object              | Map of `__init__` arg names to default values. Forwarded as `UNIAC_INIT_<UPPERCASE_NAME>` env vars at deploy time.            |
-
-## Example
-
-```json uniac.json
-{
-  "name": "greeter",
-  "kind": "app",
-  "language": "python",
-  "entrypoint": "app:Greeter",
-  "dependencies": ["logger", "feature-flags"],
-  "build": {
-    "command": ["uvicorn", "app:api", "--host", "0.0.0.0", "--port", "8080"],
-    "baseImage": "python:3.12-slim"
-  },
-  "init": {
-    "greeting": "hello",
-    "log_level": "info"
-  }
-}
+  shop:
+    type: deployment
+    services:
+      web:
+        from: worker
+        public_ports: [{ port: 8080, type: http }]
 ```
 
-`init` values are loaded into your `__init__` keyword args by [`load()`](/sdk/load).
+## Top level
+
+| Field | Meaning |
+|---|---|
+| `runtime` | Manifest runtime. `yaml` is the only supported value, and the default. |
+| `default` | The resource `uniac plan` / `uniac deploy` act on when none is named. Must name a deployment. |
+| `resources` | Named map of typed resources — the system description. Required. |
+
+Target resolution for both commands: the named resource, else `default`, else
+the manifest's only deployment. With several deployments and no `default`, the
+run fails and lists them.
+
+**Resource names** match `^[a-z0-9]+(?:(?:__?|-+)[a-z0-9]+)*$` — lowercase
+alphanumeric runs joined by interior separators (`-`, `--`, `_`, `__`), which
+may never lead or trail. The grammar is the docker-repository-safe subset,
+because instance names become image repository components. The same grammar
+constrains service instance names.
+
+## `type: service` and `type: stateful`
+
+Both declare a reusable [service definition](/concepts/services) with the same
+body; `stateful` additionally caps the running service at a single instance.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `image` | yes | OCI image reference. Prebuilt only: there is no build-from-source field. |
+| `env` | no | Environment variables, `NAME: value`. Values may embed [references](/concepts/references). |
+| `start_command` | no | Overrides the image CMD at the platform layer; the image is untouched. |
+
+There is no port field and no exposure field on a service — exposure is a
+property of the deployment (`public_ports`, below), and the internal network
+is port-transparent.
+
+**Env key grammar** is `^[A-Za-z_][A-Za-z0-9_]*$`. The key `host` is reserved —
+it is the builtin `${{self.host}}`, and declaring it is a config error.
+
+## `type: deployment`
+
+Instantiates services and resolves to the
+[deployable](/concepts/deployments#the-deployable-and-its-digest).
+
+| Field | Meaning |
+|---|---|
+| `services` | Map of instance name → instantiation. At least one is required. |
+| `services.<name>.from` | The service resource this instance draws from. Required. |
+| `services.<name>.public_ports` | Public-exposure claim set for this instance. Tri-state — see [Endpoints](/concepts/endpoints). |
+
+Each `public_ports` entry is `{ port: N, type: http|tcp }`; both keys are
+required by presence, and a bare integer is rejected at parse time. Port
+ranges (1..65535) and the at-most-one-port-per-type cap are platform policy,
+enforced at deploy time — they pass `plan`.
+
+`uniac deploy` rejects a deployment instantiating more than one service; a
+multi-service system is several deployments in one manifest — see
+[Multi-service systems](/guides/multi-service).
+
+## What fails at plan time
+
+Every message below is produced offline, before anything is sent anywhere.
+
+| Condition | Error |
+|---|---|
+| Unknown field anywhere | `field ports not found in type registry.serviceSchema` |
+| Unknown resource `type` | `unknown type "widget" (supported: service, stateful, deployment)` |
+| `runtime` other than `yaml` | `runtime "python" is not supported (only "yaml")` |
+| Service with no `image` | `service "a" declares no image` |
+| Reserved env key | `env key "host" is reserved for ${{self.host}}` |
+| Malformed reference | `malformed reference at "${{ Bad.VAR }}" — expected ${{service.VAR}} or ${{self.VAR}}` |
+| `${{self.X}}` with no such own variable | `env U references ${{self.MISSING}} but no such variable is declared` |
+| Reference to an in-set instance's missing variable | `env U references database.NOPE, but "database" declares no such variable (available: host, DATABASE_URL)` |
+| Unknown ingress kind | `public port 80 claims unknown exposure kind "grpc" (supported: http, tcp)` |
+| Bare integer in `public_ports` | `cannot unmarshal !!int 8080 into registry.publicPortSchema` |
+| Instance drawing from a missing definition | `instance "a": no service "nope"` |
+| Deployment instantiating nothing | `resource "d" must instantiate at least one service` |
+| Targeting a service | `resource "api" is a service — services are reusable definitions, not directly deployable` |
+| `default` naming a service | `default "api" is a service — only deployments are deployable targets` |
+| Name outside the grammar | `resource name "Bad-Name-" must match ^[a-z0-9]+(?:(?:__?\|-+)[a-z0-9]+)*$` |
+| Manifest with no deployment | `uniac.yaml declares no deployment — services are reusable definitions` |
+| Several deployments, no `default` | `uniac.yaml has multiple deployments and no 'default'; name one (have: d1, d2)` |
+
+What is **not** checked locally: any reference to a name outside the deployed
+set. It passes through by design and is resolved remotely — a dangling one
+surfaces at deploy time as a warning with the variable left unset, never as a
+failure. See [References](/concepts/references#cross-deployment-references).

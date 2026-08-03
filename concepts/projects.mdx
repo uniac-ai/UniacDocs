@@ -1,22 +1,39 @@
 ---
 title: "Projects"
-description: "The platform-level container that owns your Systems."
+description: "The remote destination your directory deploys to."
 ---
 
-A **project** is the platform-level container for one or more deployed Systems owned by a single account. Create one when you first `uniac link` (or via the dashboard).
+A **project** is the remote destination: a flat list of running services on
+one private network, each addressable by its instance name. There is no
+grouping above the services — no tiers, no environments, no server-side notion
+of a [deployment](/concepts/deployments).
 
-A project has:
+## Linking
 
-- A user-facing **name**, unique within your account.
-- An opaque, globally-unique **slug** assigned at creation. The slug is the stable identifier in URLs, manifest references, and Platform API calls.
+`uniac link` binds your project directory to a remote project, writing the
+binding to `.uniac/deploy.json`. `uniac deploy` and `uniac status` read it to
+know where to act.
 
-The project URL pattern is `https://{slug}.project.uniac.ai`; each Service within it gets its own [endpoint](/concepts/endpoints) under `https://{endpoint-id}.svc.uniac.ai`.
+The binding is per-checkout environment state, not source — gitignore it. A
+second environment is a second project, linked from a different checkout or
+selected per-run with `UNIAC_PROJECT_URL` (see
+[Headless operation](/guides/headless)).
 
-## Binding a local package to a project
+## The private network
 
-```bash
-uniac link            # bind for production deploys → .uniac/deploy.json
-uniac link --dev      # bind to a local dev stack → .uniac/deploy.dev.json
-```
+Every service in a project can reach every other by instance name, on
+whatever port the target process binds — the network is port-transparent, and
+no service is reachable from outside unless its deployment
+[claims exposure](/concepts/endpoints).
 
-Both files are project-local and gitignored by default — they record the slug, not a name, so renames don't break them.
+When a deploy changes the values a service exports, the platform re-resolves
+the project's other services and recreates any whose injected environment
+changed. Consumers follow providers without redeploying them by hand — see
+[References](/concepts/references).
+
+## What is running is not the manifest
+
+`uniac status` reports what the project runs, whether or not the manifest
+still describes it. Deleting a resource from `uniac.yaml` does not remove the
+running service, and the CLI has no removal command — retire services from the
+[dashboard](/dashboard/overview).

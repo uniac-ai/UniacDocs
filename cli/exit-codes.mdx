@@ -1,10 +1,47 @@
 ---
 title: "Exit codes"
-description: "What each uniac exit code means."
+description: "The typed exit statuses of deploy and status."
 ---
 
-| Code | Meaning                                                          |
-| ---- | ---------------------------------------------------------------- |
-| 0    | Success.                                                         |
-| 1    | Runtime error (invalid input, network failure, build failure).   |
-| 2    | Flag parse error or usage error.                                 |
+`uniac deploy` and `uniac status` exit with a status from a closed set, each
+paired with an error code in the [run output](/cli/output#failures). Branch on
+the exit status; read the `error` code for detail; never match on the message,
+which is prose for people.
+
+**1 is deliberately unassigned**, so a bare `exit 1` from some future
+dependency can never be mistaken for a meaning the CLI assigned.
+
+| Exit | `error` code | Meaning | What to do |
+|---|---|---|---|
+| 0 | — | Success. | Read the state block. |
+| 2 | `usage` | Malformed invocation. Nothing was sent anywhere. | Fix the arguments. |
+| 3 | `auth` | Missing or rejected credential. | `uniac auth login`, or set `UNIAC_ACCESS_TOKEN`. |
+| 4 | `not_linked` | Directory not bound to a remote project. | `uniac link`, or set `UNIAC_PROJECT_URL`. |
+| 5 | `manifest` | `uniac.yaml` does not describe a valid system. | Fix the manifest; `uniac plan` reproduces the error offline. |
+| 6 | `build` | Failed obtaining or materializing a container. | Check the image reference and the Docker daemon. |
+| 7 | `push` | Failed publishing the image to the registry. | Usually retryable. |
+| 8 | `deploy_failed` | The platform's deployment task failed. | Terminal unless `retryable` says otherwise. |
+| 9 | `unreachable` | The platform did not answer; nothing was decided either way. | Retry with backoff. |
+| 10 | `pending` | Not a failure — the work is still running. | Re-observe with `uniac status`. |
+| 70 | `internal` | A defect in the CLI. | Report it with the message. |
+
+The set is closed and additions are additive — treat any unrecognized code as
+`internal` and surface the message rather than guessing.
+
+## Known gaps in v0.3.8
+
+Some conditions that have a code of their own still arrive as `internal` (70).
+The message is accurate in each case — read it before calling the run a CLI
+defect:
+
+- An unlinked project directory reports `internal` rather than `not_linked`;
+  the message says "project not linked" and how to link.
+- A deploy still rolling out when the five-minute watch deadline passes
+  reports `internal` rather than `pending`; the message says "still …
+  after 5m0s — check the dashboard". The deployment itself continues
+  server-side; `uniac status` re-observes it.
+
+## Other commands
+
+`init`, `plan`, `link`, and `auth` are human-oriented and use plain statuses:
+`0` success, `1` error, `2` usage error.

@@ -1,24 +1,79 @@
 ---
 title: "Deployments"
-description: "Versioned snapshots of a Service."
+description: "Instantiations of services — the thing you deploy."
 ---
 
-A **deployment** is a single versioned snapshot of a Service. Each `uniac deploy` creates a new deployment with an incremented version number; older versions remain in the registry.
+A **deployment** instantiates [services](/concepts/services): a map of
+instance names to the definitions they draw from, plus the public exposure
+claimed for each instance. Resolving a deployment yields the **deployable**,
+the artifact the platform consumes. `uniac plan` and `uniac deploy` always
+target a deployment.
 
-The platform's source of truth for "which version is live" is the deployment's **desired replica count**:
+```yaml
+resources:
+  shop:
+    type: deployment
+    services:
+      web:                                # instance name — the deployed identity
+        from: worker                      # the service definition it draws from
+        public_ports: [{ port: 8080, type: http }]
+```
 
-- `NULL` — never promoted; image is in the registry but no instances are scheduled.
-- `0` — drained; was live, now scaled to zero.
-- `N ≥ 1` — active; the reconciler converges running instances to N.
+## The instance name is the identity
 
-When you deploy a new version, the platform sets the new version's replica count and zeros out the previous one. The `endpoint-id` for the Service stays stable across all versions, so URLs don't change.
+The instance name — `web` above — is the deployed service's name, its internal
+hostname, its platform identity, a component of its image repository, and the
+name every [`${{...}}` reference](/concepts/references) resolves against. The
+definition's name (`worker`) is only a local label for `from:`.
 
-## Rolling back
+The same definition can be instantiated twice under two names, or appear in
+several deployments with different exposure. That separation is the point: a
+definition describes shape once; each deployment decides who runs it and how
+it faces the world.
 
-There is no `uniac` command for rollback. To revert to a prior version, use the dashboard or the [Platform API](/platform-api/overview) to change which version's `desired_replica_count` is non-zero.
+## One service per deployment, today
 
-## Scaling
+A deployment instantiating more than one service parses and plans, but
+`uniac deploy` rejects it:
 
-Scaling is manual. POST to `/api/services/{service_id}/scale` with `{"target_replica_count": N}`. The platform enqueues a task and the reconciler converges the running instances.
+```text
+deployment "d" instantiates 2 services; multi-service deployments are not yet supported
+```
 
-There is no auto-scaling and no per-tenant ceiling beyond a system-wide sanity cap of 100.
+A multi-service system is therefore several deployments in one manifest,
+deployed one at a time and wired by cross-deployment references — the pattern
+is in [Multi-service systems](/guides/multi-service).
+
+## The deployable and its digest
+
+`uniac plan --json` prints `{resource, digest, deployable}`. The deployable is
+the canonical, target-free artifact:
+
+```json
+{
+  "kind": "deployable",
+  "services": [
+    {
+      "container": { "source": { "ref": "mendhak/http-https-echo:31" } },
+      "env": { "GREETING": "hello" },
+      "name": "web",
+      "public_ports": [{ "port": 8080, "type": "http" }]
+    }
+  ]
+}
+```
+
+The digest is content-addressed: services are name-sorted, claim lists are
+canonicalized, env keys ordered — so reindenting the YAML or reordering
+resources produces a byte-identical artifact and the same digest. Compare
+digests to answer "did this edit change the system?" without deploying.
+
+Read the deployable, not the YAML, when you need to know what will actually
+ship: it is the manifest after every default and resolution has been applied.
+
+## Deployments are client-side
+
+The platform never sees a deployment. A [project](/concepts/projects) is a
+flat list of running services; the deployment is a composition the CLI
+resolves on the way in. What a running service is serving is tracked by its
+own version number, which `uniac status` reports as `v1`, `v2`, …

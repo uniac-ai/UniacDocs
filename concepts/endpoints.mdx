@@ -1,14 +1,57 @@
 ---
 title: "Endpoints"
-description: "How requests reach a deployed Service."
+description: "How requests reach a deployed service."
 ---
 
-Every deployed Service has one public URL of the form:
+By default a service is reachable only from the project's other services.
+Public exposure is claimed per instance, in the deployment, with
+`public_ports` — because exposure is a property of the topology: the same
+definition can face the public in one deployment and stay internal in another.
 
+```yaml
+services:
+  api:
+    from: api
+    public_ports:
+      - { port: 8080, type: http }   # a hostname on the shared edge
+      - { port: 5432, type: tcp }    # raw TCP behind an allocated public host:port
 ```
-https://<endpoint-id>.svc.uniac.ai
+
+Each claim names your process's own listen port and the kind of ingress. Both
+keys are required; a bare integer is rejected at parse time.
+
+| Kind | What the platform does | Dial |
+|---|---|---|
+| `http` | Terminates HTTPS on a public hostname and routes to port `N`. | `https://<hostname>` |
+| `tcp` | Allocates a public `host:port` and forwards raw TCP to `N` as-is. | `<hostname>:<allocated-port>` |
+
+The hostname — and for `tcp`, the public port — are the platform's to choose.
+Read them back from the `endpoint` lines of `uniac deploy` or `uniac status`:
+
+```text
+endpoint  https://<allocated-host>.svc.uniac.ai → :8080
 ```
 
-The `endpoint-id` is a 20-character opaque token assigned the first time a Service deploys in a project. It is **stable across redeploys** of that Service: subsequent versions reuse the same id, so clients holding the URL stay connected.
+The address before `→` is the whole string a client dials; the `:8080` after
+it is your own listen port that traffic lands on, which appears nowhere in the
+address.
 
-Custom domains, preview URLs, and per-environment endpoints are not part of the platform today.
+## Redeploy semantics: the claim set is tri-state
+
+| Written | Meaning |
+|---|---|
+| omitted | Claims nothing. The platform keeps the serving deployment's claims, so a code-only rollout never drops exposure. |
+| `[]` | Claims nothing *and converges* the instance to no public exposure of any kind. |
+| present | Restates the full claim set; the result is exactly what is listed. |
+
+Two practical consequences:
+
+- Omitting `public_ports` on a redeploy is safe — you inherit what is already
+  claimed.
+- A present list is the whole truth: dropping one entry from a two-entry list
+  retracts that exposure. Never "clean up" a `public_ports` block you did not
+  intend to change.
+
+Expose the edge, nothing else. Databases, caches, workers, and internal APIs
+should carry no `public_ports` at all — the internal network already reaches
+them by instance name. Use `tcp` only when a client cannot speak HTTP.

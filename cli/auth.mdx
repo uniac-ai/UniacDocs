@@ -1,46 +1,28 @@
 ---
 title: "uniac auth"
-description: "Sign in and out."
+description: "Manage the CLI's login session."
 ---
 
-## uniac auth login
-
 ```bash
-uniac auth login
+uniac auth <login|status|token|logout>
 ```
 
-Opens a browser to complete OAuth, captures the returned JWT on `http://127.0.0.1:8976/callback`, and writes it to `~/.uniac/auth.json` (mode 0600).
+| Subcommand | What it does |
+|---|---|
+| `login` | Complete the browser sign-in flow and store the session in `~/.uniac/auth.json` (mode 0600). |
+| `status` | Show who is signed in and when the session expires. |
+| `token` | Print the current access token, for scripts and `UNIAC_ACCESS_TOKEN`. |
+| `logout` | Delete the stored session. |
 
-Flags:
+Only `login` touches the network; the rest read or delete the local file.
 
-| Flag             | Behavior                                                            |
-| ---------------- | ------------------------------------------------------------------- |
-| `--host <host>`  | Override the auth host (default `uniac.ai`).                        |
-| `--no-browser`   | Print the URL instead of opening one; complete sign-in on another device. |
-| `--manual`       | Paste a token directly instead of using the loopback callback.       |
+## Login flags
 
-The auth host can also be set via the `UNIAC_AUTH_HOST` env var.
+| Flag | Effect |
+|---|---|
+| `--no-browser` | Print the login URL instead of opening a browser. |
+| `--manual` | Skip the local callback server; paste the redirected URL back manually. |
+| `--host <host>` | The host serving the `/cli/auth` handoff (default `uniac.ai`, env `UNIAC_AUTH_HOST`). |
 
-## uniac auth status
-
-```bash
-uniac auth status
-```
-
-Prints the signed-in user (sub, email) and the token's `expires_at`.
-
-## uniac auth token
-
-```bash
-uniac auth token
-```
-
-Prints the raw bearer token for use in scripts. Treat as a secret.
-
-## uniac auth logout
-
-```bash
-uniac auth logout
-```
-
-Deletes `~/.uniac/auth.json`.
+For machines that cannot log in at all, set `UNIAC_ACCESS_TOKEN` — see
+[Headless operation](/guides/headless).
