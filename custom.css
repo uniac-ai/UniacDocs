@@ -77,3 +77,11 @@ html.dark {
   text-transform: uppercase;
   letter-spacing: 0.01em;
 }
+
+/* Monochrome palette: prose links keep their affordance by underline,
+   not hue. */
+#content-area a:not(:has(.card)) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 2px;
+}

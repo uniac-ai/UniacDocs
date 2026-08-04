@@ -4,9 +4,9 @@
   "name": "Uniac",
   "description": "Describe a system in one file; the platform runs it.",
   "colors": {
-    "primary": "#C8312D",
-    "light": "#E94F37",
-    "dark": "#A02420"
+    "primary": "#0A0A0A",
+    "light": "#FAFAFA",
+    "dark": "#171717"
   },
   "fonts": {
     "heading": {
