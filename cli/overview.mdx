@@ -1,38 +1,104 @@
 ---
-title: "CLI overview"
-description: "Every uniac command."
+title: "The uniac CLI"
+description: "Every command, its flags, and its behavior."
 ---
 
-The `uniac` CLI is a single Go binary, installed via
-[`npm i -g @uniac/cli`](/get-started/installation). Check the build with
-`uniac version` (also `--version` or `-v`).
+A single Go binary, installed with `npm i -g @uniac/cli` (Node 18 or newer).
+Check the build with `uniac version` (also `--version` / `-v`).
 
-## Commands
-
-| Command | Network | Docker | What it does |
-|---|---|---|---|
-| [`uniac init`](/cli/init) | no | no | Scaffold `uniac.yaml`: one service plus the deployment instantiating it. |
-| [`uniac plan`](/cli/plan) | no | no | Resolve a deployment and preview the deployable. The offline verification loop. |
-| [`uniac link`](/cli/link) | yes | no | Bind this directory to a remote project. |
-| [`uniac deploy`](/cli/deploy) | yes | yes | Resolve, materialize, push, register, then watch until the deployment settles. |
-| [`uniac status`](/cli/status) | yes | no | Report what the linked project is running. Changes nothing. |
-| [`uniac auth`](/cli/auth) | login only | no | Manage the stored session. |
-| `uniac version` | no | no | Print build metadata. |
-
-## Targeting
+Two families: `deploy` and `status` report state — each run ends with the
+[state block](/cli/output) on stdout and a [typed exit status](/cli/exit-codes)
+from the closed set 0, 2–10, 70. `init`, `plan`, `link`, and `auth` are
+human-oriented and exit `1` on error, `2` on a usage error.
 
 `plan` and `deploy` target a **deployment**: the named resource, else the
-manifest's `default`, else its only deployment. Naming a service is an error —
-services are definitions, not deployable targets.
+manifest's `default`, else its only deployment. `plan`, `deploy`, and
+`status` locate the project directory with `--dir`; `link` uses `-C`.
 
-`plan`, `deploy`, and `status` locate the project directory with `--dir`;
-`link` uses `-C`.
+## `uniac init`
 
-## Two families of command
+```bash
+uniac init
+```
 
-`deploy` and `status` report state: each run ends with the
-[state block](/cli/output) on stdout and exits with a
-[typed status](/cli/exit-codes) from the closed set 0, 2–10, 70.
+Asks for a service name and scaffolds `uniac.yaml` in the current directory:
+one image-sourced service plus the deployment that instantiates it, ready for
+`uniac plan`. Refuses to overwrite an existing manifest.
 
-`init`, `plan`, `link`, and `auth` are human-oriented: they print in their own
-shapes and exit `1` on error, `2` on a usage error.
+## `uniac plan`
+
+```bash
+uniac plan [--json] [--full] [--dir <path>] [resource]
+```
+
+Resolves a deployment and previews the
+[deployable](/concepts/manifest#the-deployable) — offline, with no
+credentials and no Docker. `deploy` runs the same resolution first, so a
+manifest that fails `plan` fails `deploy` identically, before anything is
+sent anywhere.
+
+| Flag | Effect |
+|---|---|
+| `--json` | Emit `{resource, digest, deployable}` as JSON. |
+| `--full` | Include declaration details: env values, start command. |
+| `--dir <path>` | Project directory holding `uniac.yaml` (default `.`). |
+
+## `uniac link`
+
+```bash
+uniac link [-C dir] [name|slug]
+```
+
+Binds the directory to a remote [project](/concepts/model#project), writing
+`.uniac/deploy.json` (per-checkout state — gitignore it). With no argument,
+lists the projects on your account and prompts. Requires a login session.
+
+## `uniac deploy`
+
+```bash
+uniac deploy [--dir <path>] [resource]
+```
+
+Deploys to the linked project, in phases: **plan** (the same offline
+resolution), **build** (pulls the declared image with your local Docker, using
+your own Docker credentials — requires a running daemon), **push** (publishes
+to the project registry), then **register and settle** — polls the platform
+every two seconds for up to five minutes and reports what the service settled
+as. Registration alone is not success.
+
+Rejects a deployment instantiating more than one service — compose
+[one deployment per service](/guides/multi-service). Without a link binding or
+`UNIAC_PROJECT_URL`, drops into an interactive project picker.
+
+## `uniac status`
+
+```bash
+uniac status [--dir <path>] [service]
+```
+
+Reads what the linked project is running and prints the
+[state block](/cli/output); changes nothing. With a service name, reports that
+one service. `deploy` and `status` project the same facts through the same
+code, so the two accounts cannot drift — `status` is the authoritative
+re-read whenever a deploy's account looks stale.
+
+A service the project runs appears here whether or not the manifest still
+describes it; the CLI has no removal command — retire services from the
+[dashboard](/dashboard/overview).
+
+## `uniac auth`
+
+```bash
+uniac auth <login|status|token|logout>
+```
+
+| Subcommand | What it does |
+|---|---|
+| `login` | Browser sign-in; stores the session in `~/.uniac/auth.json` (mode 0600). |
+| `status` | Who is signed in, and until when. |
+| `token` | Print the access token, for `UNIAC_ACCESS_TOKEN`. |
+| `logout` | Delete the stored session. |
+
+`login` flags: `--no-browser` prints the login URL instead of opening a
+browser; `--manual` also skips the local callback server — paste the
+redirected URL back. Only `login` touches the network.

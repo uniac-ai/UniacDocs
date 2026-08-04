@@ -3,7 +3,7 @@ title: "Multi-service systems"
 description: "Composing several services into one system."
 ---
 
-A [project](/concepts/projects) is a flat list of services on one private
+A [project](/concepts/model#project) is a flat list of services on one private
 network, each addressable by its instance name. That is the whole topology
 model. This guide shows how to shape a manifest around it.
 
@@ -63,7 +63,7 @@ whatever resource it draws `from`.
 
 Because each service gets its own deployment, essentially every cross-service
 reference crosses deployments — which means it is
-[not checked locally](/concepts/references#cross-deployment-references). Spell
+[not checked locally](/concepts/manifest#cross-deployment-references). Spell
 instance names carefully, and confirm with `uniac status` that the provider is
 running under the name you referenced. A typo does not fail the deploy; it
 leaves the variable unset and puts a `warning` line in the state block.
@@ -77,7 +77,7 @@ provider first just skips the broken window.
 
 Claim `public_ports` only on the edge — here, the API. The database carries no
 claim: the internal network already reaches it by instance name, and
-[omitting the field on redeploys](/concepts/endpoints#redeploy-semantics-the-claim-set-is-tri-state)
+[omitting the field on redeploys](/concepts/manifest#the-claim-set-is-tri-state)
 keeps whatever is already claimed.
 
 ## What the platform does not provide

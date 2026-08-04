@@ -1,0 +1,71 @@
+---
+title: "Agentic development"
+description: "Driving uniac with a coding agent or from CI."
+---
+
+The `uniac` CLI is built to be driven by an agent: `uniac plan` verifies a
+manifest fully offline, the deployable digest answers "did this edit change
+the system?" without deploying, exit statuses are typed, and stdout stays
+clean of narration. This page is the workflow.
+
+## The loop
+
+```bash
+uniac plan --json    # offline; edit the manifest until this passes
+uniac deploy         # ship; branch on the exit status
+uniac status         # re-observe at any time; changes nothing
+```
+
+- **Verify with `plan`, not by deploying.** It needs no network, credentials,
+  or Docker, and it reproduces every
+  [manifest error](/concepts/manifest#what-fails-at-plan-time) that would
+  fail a deploy. Treat it as the test suite for `uniac.yaml`.
+- **Compare digests to detect change.** `uniac plan --json | jq -r .digest`
+  is stable under reformatting — a moved digest means the system moved.
+- **Branch on the [exit status](/cli/exit-codes)**; read the `error` code in
+  the [run output](/cli/output) for detail. Never match on the message — it
+  is prose for people.
+- **Check `warning` lines on every deploy.** A dangling
+  [cross-deployment reference](/concepts/manifest#cross-deployment-references)
+  does not fail the run; it leaves the variable unset and warns.
+- Interrupting a deploy does not cancel the platform-side work — `uniac
+  status` re-observes where it landed.
+
+## Headless environment
+
+```bash
+export UNIAC_ACCESS_TOKEN="…"                 # from `uniac auth token` on a logged-in machine
+export UNIAC_PROJECT_URL="my-app-e5f6g7h8"    # full URL or bare slug
+```
+
+Together these are the fully non-interactive path. Without a
+[link binding](/concepts/model#project) and without `UNIAC_PROJECT_URL`,
+`uniac deploy` drops into an interactive project picker — which hangs a
+non-interactive caller, so always set one of them in CI.
+
+| Variable | Effect |
+|---|---|
+| `UNIAC_ACCESS_TOKEN` | Bypasses interactive login. |
+| `UNIAC_PROJECT_URL` | Targets a project, bypassing `.uniac/deploy.json` and the picker. |
+| `UNIAC_PROGRESS` | `1` forces progress narration on stderr, `0` silences it. Never affects stdout. |
+| `UNIAC_STORE_DIR` | Local artifact store location (default `~/.uniac/store`). |
+| `UNIAC_AUTH_HOST` | Host serving the `/cli/auth` login handoff (default `uniac.ai`). |
+
+Narration is written to stderr only when stderr is a terminal, so CI logs
+stay clean by default; `UNIAC_PROGRESS=1` shows live progress anyway. Docker
+must be available on the runner — `deploy` pulls the declared image with the
+runner's own Docker credentials before pushing it to the project registry.
+
+## Agent skills
+
+[uniac-ai/UniacAppSkill](https://github.com/uniac-ai/UniacAppSkill) packages
+this documentation's contracts as agent skills — the model, the manifest
+schema, the CLI surface, and multi-service composition — for agents that
+support the `~/.agents/skills` convention (Claude Code, Codex):
+
+```bash
+git clone https://github.com/uniac-ai/UniacAppSkill && bash UniacAppSkill/install.sh
+```
+
+With the skills installed, an agent asked to deploy an application loads the
+Uniac contracts instead of guessing from memory.

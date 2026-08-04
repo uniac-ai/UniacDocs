@@ -40,10 +40,10 @@ block states only what the command actually established.
 | `image` | The container source reference declared for it. Known only to a run that read the manifest. |
 | `digest` | The registry manifest digest this run published. |
 | `status` | The platform's word for what the service is doing, with observed/effective replicas: `running (1/1)`. |
-| `kind` | `stateful` for a service [capped at a single instance](/concepts/services#stateful-services); omitted otherwise. |
+| `kind` | `stateful` for a service [capped at a single instance](/concepts/manifest#type-service-and-type-stateful); omitted otherwise. |
 | `endpoint` | `<address> → :<port>`: the whole string a client dials, then your own listen port that traffic lands on. The listen port appears nowhere in the address. |
 | `hold` | A platform-side reason the service is not converging. |
-| `warning` | A condition the run succeeded despite — a dangling [reference](/concepts/references#cross-deployment-references) lands here. |
+| `warning` | A condition the run succeeded despite — a dangling [reference](/concepts/manifest#cross-deployment-references) lands here. |
 
 ## Failures
 

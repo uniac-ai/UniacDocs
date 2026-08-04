@@ -1,39 +1,30 @@
 ---
 title: "Quickstart"
-description: "Scaffold, plan, and deploy your first Uniac service."
+description: "Install, scaffold, plan, deploy."
 ---
 
 By the end you will have a container deployed and reachable at a public URL.
+You need Node 18+, a running Docker daemon, and a prebuilt container image —
+Uniac deploys images, it does not build them.
 
-## Prerequisites
-
-- Node 18 or newer (to install the CLI via npm)
-- Docker, running (for `uniac deploy`)
-- A prebuilt container image to deploy — Uniac deploys images, it does not build them
-
-## 1. Install the CLI
+## 1. Install and log in
 
 ```bash
 npm i -g @uniac/cli
-```
-
-## 2. Log in
-
-```bash
 uniac auth login
 ```
 
-This opens a browser to complete the sign-in flow and stores a token in
-`~/.uniac/auth.json`.
+`login` opens a browser and stores the session in `~/.uniac/auth.json`. For
+machines without a browser, see [Agentic development](/guides/agents).
 
-## 3. Scaffold a manifest
+## 2. Scaffold a manifest
 
 ```bash
 uniac init
 ```
 
-`uniac init` asks for a service name and writes `uniac.yaml`: one service plus
-the deployment that instantiates it. Set `image` to your own, or keep the
+Asks for a service name and writes `uniac.yaml`: one service plus the
+deployment that instantiates it. Set `image` to your own, or keep the
 scaffold's `nginx:alpine` to try the flow:
 
 ```yaml uniac.yaml
@@ -51,14 +42,13 @@ resources:
         public_ports: [{ port: 80, type: http }]
 ```
 
-## 4. Preview the deployable
+## 3. Plan
 
 ```bash
 uniac plan
 ```
 
-`plan` runs fully offline — no network, no credentials, no Docker — and prints
-what would ship:
+Runs fully offline and prints what would ship:
 
 ```text
 Deployment: main
@@ -74,17 +64,16 @@ Deploying
 Run it after every manifest edit; a manifest that fails `plan` fails `deploy`
 with the same error.
 
-## 5. Deploy
+## 4. Deploy
 
 ```bash
 uniac link
 uniac deploy
 ```
 
-`uniac link` binds the directory to a remote project — pick one from the list
-or create one. `uniac deploy` pulls the image with your local Docker, pushes it
-to the project registry, registers the deployment, and watches until it
-settles. The run ends with the state block:
+`link` binds the directory to a remote project. `deploy` pulls the image with
+your local Docker, pushes it to the project registry, registers the
+deployment, and watches until it settles, ending with the state block:
 
 ```text
 project  my-app-e5f6g7h8
@@ -96,24 +85,23 @@ service  hello  v1
   endpoint  https://<allocated-host>.svc.uniac.ai → :80
 ```
 
-Open the `endpoint` address in a browser — that's your service.
+Open the `endpoint` address — that's your service.
 
-## 6. Observe
+## 5. Observe
 
 ```bash
 uniac status
 ```
 
-Reports what the project is running right now, in the same shape as the deploy
-output. Run it any time; it changes nothing.
+Reports the same state block at any time; changes nothing.
 
-## Next steps
+## Next
 
 <CardGroup cols={2}>
-  <Card title="Your first service" icon="book-open" href="/get-started/your-first-service">
-    The same flow with explanations at each step.
+  <Card title="The model" icon="cube" href="/concepts/model">
+    Services, deployments, projects — and the loop.
   </Card>
-  <Card title="Multi-service systems" icon="diagram-project" href="/guides/multi-service">
-    Add a database and wire services together.
+  <Card title="Agentic development" icon="robot" href="/guides/agents">
+    Drive the CLI from an agent or CI.
   </Card>
 </CardGroup>

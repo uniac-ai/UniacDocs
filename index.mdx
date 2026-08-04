@@ -5,42 +5,29 @@ description: "Describe a system in one file; the platform runs it."
 
 Uniac is a cloud deployment platform. You describe a system of container-based
 services in one `uniac.yaml`, the `uniac` CLI resolves it into a deployable
-artifact, and the platform runs it: it injects each service's resolved
-environment, places containers on a private network addressable by service
-name, and allocates public addresses for whatever you claim. Nothing of Uniac
-ships inside your image — your container is entirely your own.
+artifact, and the platform runs it — injecting each service's resolved
+environment, placing containers on a private network addressable by service
+name, and allocating public addresses for whatever you claim. Nothing of
+Uniac ships inside your image.
+
+The CLI is built agent-first: offline verification, deterministic artifacts,
+typed exit codes, machine-clean output.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Install, scaffold, deploy. About five minutes.
   </Card>
-  <Card title="Your first service" icon="code" href="/get-started/your-first-service">
-    The same flow with explanations at each step.
+  <Card title="Agentic development" icon="robot" href="/guides/agents">
+    The loop an agent or CI pipeline runs, and the skills to install.
   </Card>
-</CardGroup>
-
-## Concepts
-
-<CardGroup cols={2}>
-  <Card title="Services" icon="cube" href="/concepts/services">
-    Reusable definitions of a workload's shape.
-  </Card>
-  <Card title="Deployments" icon="rocket-launch" href="/concepts/deployments">
-    Instantiations of services — the thing you deploy.
+  <Card title="The model" icon="cube" href="/concepts/model">
+    Services, deployments, projects.
   </Card>
   <Card title="The manifest" icon="file-code" href="/concepts/manifest">
     The complete `uniac.yaml` schema.
   </Card>
-  <Card title="References" icon="link" href="/concepts/references">
-    Wiring services together with `${{service.VAR}}`.
-  </Card>
-</CardGroup>
-
-## Reference
-
-<CardGroup cols={2}>
   <Card title="CLI reference" icon="terminal" href="/cli/overview">
-    Every `uniac` command, its output, and its exit codes.
+    Every command, the run output, the exit codes.
   </Card>
   <Card title="Multi-service systems" icon="diagram-project" href="/guides/multi-service">
     Composing several services into one system.

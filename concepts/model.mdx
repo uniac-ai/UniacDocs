@@ -1,0 +1,102 @@
+---
+title: "The model"
+description: "Services, deployments, and projects."
+---
+
+You describe a system in one `uniac.yaml`, the CLI resolves it into a
+deployable and ships container images to a remote project, and the platform
+runs them. Three nouns carry the whole model.
+
+## Service
+
+A reusable *definition* of one workload's shape: which image, which
+environment variables, which start command. A service is never directly
+deployable — targeting one is an error. `type: stateful` is the same
+definition capped at a single running instance, for workloads like databases
+where two concurrent instances would corrupt state.
+
+A service declares no port. The project's internal network is
+port-transparent: other services reach yours by name, on whatever port your
+process binds. Liveness is observed on the container process, never by
+probing a port.
+
+## Deployment
+
+An *instantiation*: a map of instance names to the definitions they draw
+from, plus the public exposure claimed for each instance. Resolving a
+deployment yields the deployable, the thing the platform consumes.
+
+**The instance name is the identity.** It is the deployed service's name, its
+internal hostname, its platform identity, and the name every
+[`${{...}}` reference](/concepts/manifest#references) resolves against. The
+definition's name is only a local label for `from:`.
+
+```yaml
+runtime: yaml
+default: shop
+resources:
+  worker:                                 # definition
+    type: service
+    image: "mendhak/http-https-echo:31"
+    env:
+      GREETING: hello
+
+  shop:                                   # deployment
+    type: deployment
+    services:
+      web:                                # instance name — the deployed identity
+        from: worker
+        public_ports: [{ port: 8080, type: http }]
+```
+
+`uniac deploy` rejects a deployment instantiating more than one service, so a
+multi-service system is several deployments in one manifest — see
+[Multi-service systems](/guides/multi-service).
+
+## Project
+
+The remote destination, bound to your directory by `uniac link`
+(`.uniac/deploy.json` — per-checkout state, gitignore it). A project is a
+flat list of running services; the platform holds no grouping above them.
+Deployments are a client-side composition resolved on the way in, so the
+platform never sees one — what a running service is serving is its own
+version number.
+
+What is running is not the manifest: deleting a resource from `uniac.yaml`
+does not remove the service, and the CLI has no removal command — retire
+services from the [dashboard](/dashboard/overview).
+
+## The loop
+
+```bash
+uniac init      # scaffold uniac.yaml: one service + the deployment instantiating it
+uniac plan      # resolve and preview — offline, no auth, no Docker
+uniac link      # bind this directory to a remote project
+uniac deploy    # resolve + materialize + push + register, then watch it settle
+uniac status    # what the project is running now
+```
+
+**`plan` is the verification loop.** It needs no network, no credentials, and
+no Docker daemon; it applies every rule decidable from the manifest alone and
+prints the resolved deployable plus its content digest. Run it after every
+manifest edit — a manifest that fails `plan` fails `deploy` identically,
+before anything is sent anywhere.
+
+**Identical inputs yield an identical digest.** The deployable is
+content-addressed: reindenting YAML or reordering resources leaves the digest
+unchanged. A digest that moved means the system actually changed.
+
+## Ownership
+
+| The platform owns | You own |
+|---|---|
+| Injecting the resolved `env` at container start | Everything inside the image |
+| The private network, addressable by service name | Which port your process binds |
+| Public hostnames and allocated TCP ports | Health endpoints, retries, readiness |
+| Resolving `${{...}}` values at deploy time | Declaring the references |
+| Recreating consumers when a provider's values change | Migrations, data, backups |
+
+The container environment is **exactly** the resolved declared `env` —
+nothing is injected beyond it. Images are prebuilt only: build and publish in
+your own pipeline, then reference the tag or digest — there is no
+build-from-source field.

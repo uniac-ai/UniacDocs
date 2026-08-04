@@ -13,15 +13,22 @@ For Mintlify components and config reference, install the Mintlify skill: `npx s
 
 ## Scope
 
-Document what users can do today. If a feature isn't shipped, it doesn't appear here, even as "coming soon." Internal platform architecture lives in UniacInfra.
+Document the released surface, nothing else. If a behavior isn't in the shipped CLI or its schema, it doesn't appear here — not as "coming soon," and not because an internal note describes it. Verify against the released binary; internal platform architecture lives in UniacInfra.
+
+The primary audience is agent-driven development: an agent (or the engineer directing one) authoring `uniac.yaml` and driving the CLI. Lead with contracts an agent can act on — offline verification, digests, exit codes, output shape.
 
 ## Style
 
+- Minimal page set. Prefer extending an existing page over adding one; a new page must own a concern no current page owns. Example outputs are pasted from real runs, never composed.
 - Active voice, second person.
 - Sentence case for headings.
 - Bold for UI elements: Click **Settings**.
 - Code formatting for commands, paths, file names, code references.
 - Apply Uniac's information-cleanness principles: every sentence earns its keep; no derived info; no example lists where each item reduces to the same point; no cross-references that don't pay rent.
+
+## Look
+
+Neo-brutalist: flat surfaces, hard borders, offset shadows, no gradients, no rounded corners. The skin lives in `custom.css` (Mintlify applies every `.css` file in the repo); type and palette live in `docs.json`.
 
 ## Canonical names
 

@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Uniac",
-  "description": "Build systems at the speed of thought.",
+  "description": "Describe a system in one file; the platform runs it.",
   "colors": {
     "primary": "#C8312D",
     "light": "#E94F37",
@@ -10,18 +10,17 @@
   },
   "fonts": {
     "heading": {
-      "family": "Geist",
-      "weight": 600
+      "family": "Space Grotesk",
+      "weight": 700
     },
     "body": {
-      "family": "Geist",
+      "family": "Space Grotesk",
       "weight": 400
     }
   },
   "background": {
-    "decoration": "gradient",
     "color": {
-      "light": "#F7FAFF",
+      "light": "#FAF6EF",
       "dark": "#0A0A0A"
     }
   },
@@ -39,40 +38,27 @@
             "group": "Get started",
             "pages": [
               "index",
-              "quickstart",
-              "get-started/installation",
-              "get-started/login",
-              "get-started/your-first-service"
+              "quickstart"
             ]
           },
           {
             "group": "Concepts",
             "pages": [
-              "concepts/services",
-              "concepts/deployments",
-              "concepts/projects",
-              "concepts/references",
-              "concepts/endpoints",
+              "concepts/model",
               "concepts/manifest"
             ]
           },
           {
             "group": "Guides",
             "pages": [
-              "guides/multi-service",
-              "guides/headless"
+              "guides/agents",
+              "guides/multi-service"
             ]
           },
           {
             "group": "Dashboard",
             "pages": [
               "dashboard/overview"
-            ]
-          },
-          {
-            "group": "Platform API",
-            "pages": [
-              "platform-api/overview"
             ]
           }
         ]
@@ -83,13 +69,7 @@
           {
             "group": "uniac CLI",
             "pages": [
-              "cli/overview",
-              "cli/init",
-              "cli/plan",
-              "cli/link",
-              "cli/deploy",
-              "cli/status",
-              "cli/auth"
+              "cli/overview"
             ]
           },
           {
@@ -119,16 +99,32 @@
   },
   "redirects": [
     { "source": "/sdk/overview", "destination": "/" },
-    { "source": "/sdk/service", "destination": "/concepts/services" },
-    { "source": "/sdk/system", "destination": "/concepts/deployments" },
-    { "source": "/sdk/node", "destination": "/concepts/references" },
-    { "source": "/sdk/nodespec", "destination": "/concepts/references" },
+    { "source": "/sdk/service", "destination": "/concepts/model" },
+    { "source": "/sdk/system", "destination": "/concepts/model" },
+    { "source": "/sdk/node", "destination": "/concepts/manifest" },
+    { "source": "/sdk/nodespec", "destination": "/concepts/manifest" },
     { "source": "/sdk/load", "destination": "/concepts/manifest" },
     { "source": "/sdk/exceptions", "destination": "/cli/exit-codes" },
-    { "source": "/concepts/nodes", "destination": "/concepts/references" },
-    { "source": "/cli/build", "destination": "/cli/deploy" },
+    { "source": "/concepts/nodes", "destination": "/concepts/manifest" },
+    { "source": "/concepts/services", "destination": "/concepts/model" },
+    { "source": "/concepts/deployments", "destination": "/concepts/model" },
+    { "source": "/concepts/projects", "destination": "/concepts/model" },
+    { "source": "/concepts/references", "destination": "/concepts/manifest" },
+    { "source": "/concepts/endpoints", "destination": "/concepts/manifest" },
+    { "source": "/get-started/installation", "destination": "/quickstart" },
+    { "source": "/get-started/login", "destination": "/quickstart" },
+    { "source": "/get-started/your-first-service", "destination": "/quickstart" },
+    { "source": "/cli/build", "destination": "/cli/overview" },
     { "source": "/cli/dev", "destination": "/quickstart" },
-    { "source": "/cli/install", "destination": "/get-started/installation" }
+    { "source": "/cli/install", "destination": "/quickstart" },
+    { "source": "/cli/init", "destination": "/cli/overview" },
+    { "source": "/cli/plan", "destination": "/cli/overview" },
+    { "source": "/cli/link", "destination": "/cli/overview" },
+    { "source": "/cli/deploy", "destination": "/cli/overview" },
+    { "source": "/cli/status", "destination": "/cli/overview" },
+    { "source": "/cli/auth", "destination": "/cli/overview" },
+    { "source": "/guides/headless", "destination": "/guides/agents" },
+    { "source": "/platform-api/overview", "destination": "/cli/overview" }
   ],
   "logo": {
     "light": "/logo/light.png",
