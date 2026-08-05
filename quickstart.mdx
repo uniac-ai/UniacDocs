@@ -1,107 +1,114 @@
 ---
 title: "Quickstart"
-description: "Install, scaffold, plan, deploy."
+description: "Set up an agent to deploy on Uniac."
 ---
 
-By the end you will have a container deployed and reachable at a public URL.
-You need Node 18+, a running Docker daemon, and a prebuilt container image —
-Uniac deploys images, it does not build them.
+By the end, a coding agent — Claude Code, Codex, or anything that reads
+`~/.agents/skills` — can take your application from "deploy this" to a running
+service, and you can verify everything it did. You need Node 18+, a running
+Docker daemon, and a prebuilt container image; Uniac deploys images, it does
+not build them.
 
-## 1. Install and log in
+## 1. Install the CLI and log in
+
+The two steps that need a human: installing the binary the agent will drive,
+and authenticating it.
 
 ```bash
 npm i -g @uniac/cli
 uniac auth login
 ```
 
-`login` opens a browser and stores the session in `~/.uniac/auth.json`. For
-machines without a browser, see [Agentic development](/guides/agents).
+`login` opens a browser and stores the session in `~/.uniac/auth.json`; every
+`uniac` command the agent runs uses it. For machines without a browser — CI,
+remote agents — see [Agentic development](/guides/agents).
 
-## 2. Scaffold a manifest
+## 2. Give your agent the contracts
 
 ```bash
-uniac init
+git clone https://github.com/uniac-ai/UniacAppSkill && bash UniacAppSkill/install.sh
 ```
 
-Asks for a service name and writes `uniac.yaml`: one service plus the
-deployment that instantiates it. Set `image` to your own, or keep the
-scaffold's `nginx:alpine` to try the flow:
+This installs the Uniac agent skills: the model, the full manifest schema,
+the CLI's output and exit-code contracts, and multi-service composition. The
+agent works from the shipped contracts instead of guessing from memory.
+
+## 3. Ask for a deployment
+
+Tell the agent what should run, not which commands to run:
+
+```text
+Deploy this on Uniac: image ghcr.io/acme/api:1.4.0, listening on 8080, public over HTTP.
+```
+
+The agent authors `uniac.yaml` — one file, the whole system description:
 
 ```yaml uniac.yaml
 runtime: yaml
 default: main
 resources:
-  hello:
+  api:
     type: service
-    image: nginx:alpine
+    image: ghcr.io/acme/api:1.4.0
   main:
     type: deployment
     services:
-      hello:
-        from: hello
-        public_ports: [{ port: 80, type: http }]
+      api:
+        from: api
+        public_ports: [{ port: 8080, type: http }]
 ```
 
-## 3. Plan
-
-```bash
-uniac plan
-```
-
-Runs fully offline and prints what would ship:
+and verifies it with `uniac plan` — offline, no credentials, no Docker. A
+manifest that fails `plan` fails `deploy` with the same error, so this is
+where the agent iterates:
 
 ```text
 Deployment: main
-Artifact:   sha256:2e462d2fe307
+Artifact:   sha256:d15249bcf885
 
 Building
-  pull nginx:alpine
+  pull ghcr.io/acme/api:1.4.0
 
 Deploying
-  hello  nginx:alpine  public: 80 (http)
+  api  ghcr.io/acme/api:1.4.0  public: 8080 (http)
 ```
 
-Run it after every manifest edit; a manifest that fails `plan` fails `deploy`
-with the same error.
-
-## 4. Deploy
-
-```bash
-uniac link
-uniac deploy
-```
-
-`link` binds the directory to a remote project. `deploy` pulls the image with
-your local Docker, pushes it to the project registry, registers the
-deployment, and watches until it settles, ending with the state block:
+Once the plan is clean, the agent binds the directory to a project
+(`uniac link`) and ships (`uniac deploy`), which pushes the image, registers
+the deployment, and watches until the platform settles — ending with the
+state block:
 
 ```text
 project  my-app-e5f6g7h8
 
-service  hello  v1
-  image  nginx:alpine
+service  api  v1
+  image  ghcr.io/acme/api:1.4.0
   digest  sha256:…
   status  running (1/1)
-  endpoint  https://<allocated-host>.svc.uniac.ai → :80
+  endpoint  https://<allocated-host>.svc.uniac.ai → :8080
 ```
 
-Open the `endpoint` address — that's your service.
-
-## 5. Observe
+## 4. Verify what the agent did
 
 ```bash
 uniac status
 ```
 
-Reports the same state block at any time; changes nothing.
+Re-observes the project and prints the same state block; it changes nothing.
+The `endpoint` line is your service's public address, `v1` is the serving
+deployment, and a `warning` line is a condition worth reading. Everything the
+agent did is re-readable — the platform's account, not the agent's.
+
+Prefer to drive the commands yourself? They are all in the
+[CLI reference](/cli/overview).
 
 ## Next
 
 <CardGroup cols={2}>
-  <Card title="The model" icon="cube" href="/concepts/model">
-    Services, deployments, projects — and the loop.
-  </Card>
   <Card title="Agentic development" icon="robot" href="/guides/agents">
-    Drive the CLI from an agent or CI.
+    The loop the agent runs, exit-code branching, headless environments.
+  </Card>
+  <Card title="The model" icon="cube" href="/concepts/model">
+    Services, deployments, projects — what the agent is describing.
   </Card>
 </CardGroup>
