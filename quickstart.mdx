@@ -20,8 +20,8 @@ uniac auth login
 ```
 
 `login` opens a browser and stores the session in `~/.uniac/auth.json`; every
-`uniac` command the agent runs uses it. For machines without a browser — CI,
-remote agents — see [Agentic development](/guides/agents).
+`uniac` command the agent runs uses it. For machines without a browser, see
+[Headless environments](#headless-environments) below.
 
 ## 2. Give your agent the contracts
 
@@ -102,13 +102,53 @@ agent did is re-readable — the platform's account, not the agent's.
 Prefer to drive the commands yourself? They are all in the
 [CLI reference](/cli/overview).
 
+## The contract the agent works against
+
+- **`uniac plan` is the test suite for `uniac.yaml`.** It reproduces every
+  [manifest error](/concepts/manifest#what-fails-at-plan-time) offline, and
+  `uniac plan --json | jq -r .digest` is a content-addressed change detector —
+  a moved digest means the system moved.
+- **Exit statuses are typed and closed** — branch on them, read the `error`
+  code in the [run output](/cli/output) for detail, and never match on the
+  message: it is prose for people. See [Exit codes](/cli/exit-codes).
+- **Check `warning` lines on every deploy.** A dangling
+  [cross-deployment reference](/concepts/manifest#cross-deployment-references)
+  does not fail the run; it leaves the variable unset and warns.
+- **Interrupting a deploy does not cancel the platform-side work** — `uniac
+  status` re-observes where it landed.
+
+## Headless environments
+
+For CI or an agent host without a browser, skip `uniac auth login` and
+`uniac link` and set two variables — everything else works the same:
+
+```bash
+export UNIAC_ACCESS_TOKEN="…"                 # from `uniac auth token` on a logged-in machine
+export UNIAC_PROJECT_URL="my-app-e5f6g7h8"    # full URL or bare slug
+```
+
+Without a link binding and without `UNIAC_PROJECT_URL`, `uniac deploy` drops
+into an interactive project picker — which hangs a non-interactive caller, so
+always set one of them in CI. Docker must be available on the runner.
+
+| Variable | Effect |
+|---|---|
+| `UNIAC_ACCESS_TOKEN` | Bypasses interactive login. |
+| `UNIAC_PROJECT_URL` | Targets a project, bypassing `.uniac/deploy.json` and the picker. |
+| `UNIAC_PROGRESS` | `1` forces progress narration on stderr, `0` silences it. Never affects stdout. |
+| `UNIAC_STORE_DIR` | Local artifact store location (default `~/.uniac/store`). |
+| `UNIAC_AUTH_HOST` | Host serving the `/cli/auth` login handoff (default `uniac.ai`). |
+
+Narration goes to stderr only when stderr is a terminal, so CI logs stay
+clean by default; `UNIAC_PROGRESS=1` shows live progress anyway.
+
 ## Next
 
 <CardGroup cols={2}>
-  <Card title="Agentic development" icon="robot" href="/guides/agents">
-    The loop the agent runs, exit-code branching, headless environments.
-  </Card>
   <Card title="The model" icon="cube" href="/concepts/model">
     Services, deployments, projects — what the agent is describing.
+  </Card>
+  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
+    The complete uniac.yaml schema the agent writes against.
   </Card>
 </CardGroup>

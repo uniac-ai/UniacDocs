@@ -50,8 +50,9 @@ resources:
 ```
 
 `uniac deploy` rejects a deployment instantiating more than one service, so a
-multi-service system is several deployments in one manifest — see
-[Multi-service systems](/guides/multi-service).
+multi-service system is several deployments in one manifest, deployed one at
+a time and wired by
+[cross-deployment references](/concepts/manifest#cross-deployment-references).
 
 ## Project
 
@@ -64,7 +65,8 @@ version number.
 
 What is running is not the manifest: deleting a resource from `uniac.yaml`
 does not remove the service, and the CLI has no removal command — retire
-services from the [dashboard](/dashboard/overview).
+services from the dashboard at [uniac.ai](https://uniac.ai), which also
+covers scaling replicas and deleting projects.
 
 ## The loop
 

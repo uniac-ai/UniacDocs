@@ -119,8 +119,8 @@ Instantiates services and resolves to the deployable.
 | `services.<name>.public_ports` | Public-exposure claim set for this instance. Tri-state, below. |
 
 `uniac deploy` rejects a deployment instantiating more than one service; a
-multi-service system is several deployments in one manifest — see
-[Multi-service systems](/guides/multi-service).
+multi-service system is several deployments in one manifest, deployed one at
+a time and wired by cross-deployment references.
 
 ### `public_ports`
 

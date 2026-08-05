@@ -47,19 +47,6 @@
               "concepts/model",
               "concepts/manifest"
             ]
-          },
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/agents",
-              "guides/multi-service"
-            ]
-          },
-          {
-            "group": "Dashboard",
-            "pages": [
-              "dashboard/overview"
-            ]
           }
         ]
       },
@@ -123,7 +110,10 @@
     { "source": "/cli/deploy", "destination": "/cli/overview" },
     { "source": "/cli/status", "destination": "/cli/overview" },
     { "source": "/cli/auth", "destination": "/cli/overview" },
-    { "source": "/guides/headless", "destination": "/guides/agents" },
+    { "source": "/guides/headless", "destination": "/quickstart" },
+    { "source": "/guides/agents", "destination": "/quickstart" },
+    { "source": "/guides/multi-service", "destination": "/concepts/manifest" },
+    { "source": "/dashboard/overview", "destination": "/" },
     { "source": "/platform-api/overview", "destination": "/cli/overview" }
   ],
   "logo": {
