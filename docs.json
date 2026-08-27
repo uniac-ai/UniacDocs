@@ -2,26 +2,25 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Uniac",
-  "description": "Build systems at the speed of thought.",
+  "description": "Describe a system in one file; the platform runs it.",
   "colors": {
-    "primary": "#C8312D",
-    "light": "#E94F37",
-    "dark": "#A02420"
+    "primary": "#0A0A0A",
+    "light": "#FAFAFA",
+    "dark": "#171717"
   },
   "fonts": {
     "heading": {
-      "family": "Geist",
-      "weight": 600
+      "family": "Space Grotesk",
+      "weight": 700
     },
     "body": {
-      "family": "Geist",
+      "family": "Space Grotesk",
       "weight": 400
     }
   },
   "background": {
-    "decoration": "gradient",
     "color": {
-      "light": "#F7FAFF",
+      "light": "#FAF6EF",
       "dark": "#0A0A0A"
     }
   },
@@ -39,50 +38,14 @@
             "group": "Get started",
             "pages": [
               "index",
-              "quickstart",
-              "get-started/installation",
-              "get-started/login",
-              "get-started/your-first-service"
+              "quickstart"
             ]
           },
           {
             "group": "Concepts",
             "pages": [
-              "concepts/services",
-              "concepts/nodes",
-              "concepts/manifest",
-              "concepts/projects",
-              "concepts/deployments",
-              "concepts/endpoints"
-            ]
-          },
-          {
-            "group": "Dashboard",
-            "pages": [
-              "dashboard/overview"
-            ]
-          },
-          {
-            "group": "Platform API",
-            "pages": [
-              "platform-api/overview"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "SDK Reference",
-        "groups": [
-          {
-            "group": "Python SDK",
-            "pages": [
-              "sdk/overview",
-              "sdk/service",
-              "sdk/system",
-              "sdk/node",
-              "sdk/nodespec",
-              "sdk/load",
-              "sdk/exceptions"
+              "concepts/model",
+              "concepts/manifest"
             ]
           }
         ]
@@ -93,14 +56,13 @@
           {
             "group": "uniac CLI",
             "pages": [
-              "cli/overview",
-              "cli/init",
-              "cli/build",
-              "cli/install",
-              "cli/link",
-              "cli/deploy",
-              "cli/auth",
-              "cli/dev",
+              "cli/overview"
+            ]
+          },
+          {
+            "group": "Contracts",
+            "pages": [
+              "cli/output",
               "cli/exit-codes"
             ]
           }
@@ -113,15 +75,91 @@
           "anchor": "Dashboard",
           "href": "https://uniac.ai",
           "icon": "gauge"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/uniac-ai/Uniac",
-          "icon": "github"
         }
       ]
     }
   },
+  "redirects": [
+    { "source": "/sdk/overview", "destination": "/" },
+    { "source": "/sdk/service", "destination": "/concepts/model" },
+    { "source": "/sdk/system", "destination": "/concepts/model" },
+    { "source": "/sdk/node", "destination": "/concepts/manifest" },
+    { "source": "/sdk/nodespec", "destination": "/concepts/manifest" },
+    { "source": "/sdk/load", "destination": "/concepts/manifest" },
+    { "source": "/sdk/exceptions", "destination": "/cli/exit-codes" },
+    { "source": "/sdk/fastapi-service", "destination": "/" },
+    { "source": "/sdk/service-client", "destination": "/" },
+    { "source": "/sdk/ai-primitives", "destination": "/" },
+    { "source": "/sdk/changelog", "destination": "/" },
+    { "source": "/concepts/nodes", "destination": "/concepts/manifest" },
+    { "source": "/concepts/services", "destination": "/concepts/model" },
+    { "source": "/concepts/deployments", "destination": "/concepts/model" },
+    { "source": "/concepts/projects", "destination": "/concepts/model" },
+    { "source": "/concepts/references", "destination": "/concepts/manifest" },
+    { "source": "/concepts/endpoints", "destination": "/concepts/manifest" },
+    { "source": "/get-started/installation", "destination": "/quickstart" },
+    { "source": "/get-started/login", "destination": "/quickstart" },
+    { "source": "/get-started/your-first-service", "destination": "/quickstart" },
+    { "source": "/cli/build", "destination": "/cli/overview" },
+    { "source": "/cli/dev", "destination": "/quickstart" },
+    { "source": "/cli/install", "destination": "/quickstart" },
+    { "source": "/cli/init", "destination": "/cli/overview" },
+    { "source": "/cli/plan", "destination": "/cli/overview" },
+    { "source": "/cli/link", "destination": "/cli/overview" },
+    { "source": "/cli/deploy", "destination": "/cli/overview" },
+    { "source": "/cli/status", "destination": "/cli/overview" },
+    { "source": "/cli/auth", "destination": "/cli/overview" },
+    { "source": "/cli/config", "destination": "/cli/overview" },
+    { "source": "/cli/sim", "destination": "/cli/overview" },
+    { "source": "/guides/headless", "destination": "/quickstart" },
+    { "source": "/guides/agents", "destination": "/quickstart" },
+    { "source": "/guides/multi-service", "destination": "/concepts/manifest" },
+    { "source": "/dashboard/overview", "destination": "/" },
+    { "source": "/dashboard/billing", "destination": "/" },
+    { "source": "/dashboard/teams-and-members", "destination": "/" },
+    { "source": "/platform-api/overview", "destination": "/cli/overview" },
+    { "source": "/services/configuration", "destination": "/concepts/manifest" },
+    { "source": "/services/secrets", "destination": "/concepts/manifest" },
+    { "source": "/services/dependencies", "destination": "/concepts/manifest" },
+    { "source": "/services/service-to-service", "destination": "/concepts/model" },
+    { "source": "/services/fastapi-service", "destination": "/" },
+    { "source": "/services/routing-and-handlers", "destination": "/" },
+    { "source": "/services/ai-primitives", "destination": "/" },
+    { "source": "/local/simulator", "destination": "/cli/overview" },
+    { "source": "/local/iterating", "destination": "/cli/overview" },
+    { "source": "/local/multi-service", "destination": "/concepts/manifest" },
+    { "source": "/deploy/first-deploy", "destination": "/quickstart" },
+    { "source": "/deploy/environments", "destination": "/concepts/model" },
+    { "source": "/deploy/rollout-and-rollback", "destination": "/cli/overview" },
+    { "source": "/deploy/custom-domains", "destination": "/" },
+    { "source": "/operate/troubleshooting", "destination": "/cli/exit-codes" },
+    { "source": "/operate/scaling", "destination": "/concepts/model" },
+    { "source": "/operate/logs", "destination": "/" },
+    { "source": "/operate/metrics", "destination": "/" },
+    { "source": "/recipes/multi-service-app", "destination": "/concepts/manifest" },
+    { "source": "/recipes/background-job", "destination": "/" },
+    { "source": "/recipes/call-anthropic", "destination": "/" },
+    { "source": "/recipes/call-openai", "destination": "/" },
+    { "source": "/recipes/scheduled-task", "destination": "/" },
+    { "source": "/recipes/webhook-receiver", "destination": "/" },
+    { "source": "/ai-tools/claude-code", "destination": "/quickstart" },
+    { "source": "/ai-tools/cursor", "destination": "/quickstart" },
+    { "source": "/ai-tools/windsurf", "destination": "/quickstart" },
+    { "source": "/account/pricing", "destination": "/" },
+    { "source": "/account/limits", "destination": "/" },
+    { "source": "/essentials/markdown", "destination": "/" },
+    { "source": "/essentials/code", "destination": "/" },
+    { "source": "/essentials/images", "destination": "/" },
+    { "source": "/essentials/navigation", "destination": "/" },
+    { "source": "/essentials/reusable-snippets", "destination": "/" },
+    { "source": "/essentials/settings", "destination": "/" },
+    { "source": "/development", "destination": "/" },
+    { "source": "/api-reference/introduction", "destination": "/" },
+    { "source": "/api-reference/endpoint/get", "destination": "/" },
+    { "source": "/api-reference/endpoint/create", "destination": "/" },
+    { "source": "/api-reference/endpoint/delete", "destination": "/" },
+    { "source": "/api-reference/endpoint/webhook", "destination": "/" }
+  ],
   "logo": {
     "light": "/logo/light.png",
     "dark": "/logo/dark.png"
@@ -157,8 +195,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/uniac",
-      "github": "https://github.com/uniac-ai/Uniac"
+      "x": "https://x.com/uniac"
     }
   }
 }

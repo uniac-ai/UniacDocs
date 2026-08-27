@@ -1,0 +1,186 @@
+---
+title: "Run output"
+description: "What deploy and status print, and where."
+---
+
+Once past flag parsing, `uniac deploy` prints exactly one thing on stdout:
+the frame the finished run leaves behind. It holds two registers — the **run
+record**, what the run did, then the **state block**, what it established —
+separated by a blank line, the state block at the margin because it is the
+answer rather than a step.
+
+`uniac status` prints the state block alone — and an error block beneath it
+when the read fails. Both on stdout; the reporting path writes nothing to
+stderr. Either command does write there when it never gets past flag
+parsing — `-h`, or a malformed invocation — printing the usage block on
+stderr and nothing at all on stdout (see [Exit codes](/cli/exit-codes)).
+
+Live progress belongs to `deploy` and goes to **stderr**, and only when
+stderr is a terminal with real width. The live area erases itself when the
+run ends, so stdout is a function of the run alone — identical bytes whether
+or not anyone watched. `UNIAC_PROGRESS=1` streams plain progress lines to
+stderr instead (the CI form), `UNIAC_PROGRESS=0` silences it; neither touches
+stdout, and neither affects `uniac status`, which narrates nothing.
+
+## The run record
+
+The record is the run's task tree: the root line `deploy <target>` at the
+margin, then one line per stage beneath it, indented two spaces, in the
+order the run takes them — `plan` summarized by the deployable digest,
+`link` by the project slug, `build` by `<N> image(s)`, then `push <service>`
+by the image digest and `deploy <service>` by the settled status.
+
+Both digests are shortened to `sha256:` plus twelve hex characters; the
+settled status is the platform's own word for what the service ended as. The
+glyphs are `✓` done and `✗` failed. Ctrl-C fails the stage that was in
+flight — `✗`, with the interruption as the last line of its evidence — and
+the run exits under that stage's own code.
+
+The root line always carries a duration; a stage carries one only when it
+took a second or more. Durations render as `480ms`, `41.0s`, `2m03s`. A
+clean run stays one level deep: the build's own steps live in the live view,
+not in the record. The frames under [Failures](#failures) show the record as
+it renders.
+
+## The state block
+
+The state block is the platform's account of the project — the same view the
+dashboard shows, and the same rendering both commands print. An omitted line
+is an absent fact, never a hidden one, and the quiet normal says nothing: an
+`active` lifecycle, no task in flight, and replicas as requested add no rows.
+
+```text
+project  my-app-e5f6g7h8
+
+service      api  v4
+  status     running (2/2)
+  kind       stateless
+  lifecycle  preparing
+  deploying  running: Provision instances
+  endpoint   http  https://khjngx7iqpu03qux.svc.uniac.ai → :8080
+  warning    ${{db.host}} dangling — 'db' is not resolvable in this environment
+
+service     db  v2
+  status    suspended (0/0)
+  kind      stateful
+  replicas  1 requested
+  endpoint  tcp  ep1.tcp.uniac.ai:20001 → :5432
+  volume    db.data at /var/lib/postgresql/data
+  hold      billing_past_due
+
+volume   db.data
+  size   10GB
+  state  attached to db
+
+volume   old.data
+  size   5GB
+  state  unattached (no service holds it; data intact)
+```
+
+Services appear in name order. Columns align within a block, not across the
+page — read a line by its label, never by a column offset.
+
+| Line | Meaning |
+|---|---|
+| `project` | The linked project's name; `deploy` falls back to its slug. |
+| `service <name>  v<N>` | Starts one block per service. `v<N>` numbers the serving deployment — "which state is this service in" — and is absent until one exists. |
+| `status` | The platform's word for what the service is doing, with observed over effective replicas when the platform reports an observation: `running (2/2)`. |
+| `kind` | The platform's own word for how it runs the instances: `stateful` for [one capped at a single instance](/concepts/manifest#type-service-and-type-stateful), `stateless` otherwise. Absent when the platform reports no kind at all, which reads as stateless. |
+| `lifecycle` | The serving deployment's phase — `preparing`, `retiring`, `retired`. Absent while it is `active`. |
+| `deploying` | The deployment task in flight: its state, and the step it is on when that says more. Absent when nothing is running. |
+| `replicas` | `<N> requested`, said only when the request differs from what the platform settled on — when the platform reports an observation, the effective count is already the denominator in `status`. |
+| `endpoint` | `<type>  <address> → :<port>`: the ingress kind, the whole string a client dials, then your own listen port the traffic lands on. The type prefix and the `→ :<port>` tail each appear only when the platform reports that half, so a bare `<address>` is a whole line. A `tcp` address already carries its allocated edge port; the number after `→ :` is the port inside the container, never one to dial. |
+| `volume` | `<name> at <mount path>`: which durable volume this service holds, and where it mounts. Size and lifecycle belong to the entity block below. |
+| `hold` | A platform-side reason the service is not converging, named as a code rather than prose. A service under a hold is not running, and its `status` says so. |
+| `warning` | A condition the run succeeded despite. Whatever the platform reports passes through unchanged — the unresolvable [reference](/concepts/manifest#cross-deployment-references) in the block above is one. Two more are the CLI's own: ``state unread — the platform read path did not answer; run `uniac status` ``, when the run deployed the service but could not read what it ended as — the block is then that service's name and its warnings, every other row absent for want of a read rather than for quiet; and `release record not written: <error>`, when the local note of the release fails to write, which lands on every service the run deployed and leaves the deployment itself standing. |
+
+### Volume entities
+
+After the services come the project's durable volumes, one block each. An
+indented `volume` row is a mount on a service; a `volume` row at the margin
+opens an entity, whose own facts are its size and its lifecycle state:
+
+| Line | Meaning |
+|---|---|
+| `volume <name>` | The project-scoped entity name, [`<instance>.<local>`](/concepts/manifest#volumes). |
+| `size` | Provisioned size, in GB. |
+| `state` | `attached to <service>` — a bare `attached` when the platform names no holder — `unattached (no service holds it; data intact)`, or the platform's own word for a disk in motion: `provisioning`, `attaching`, `detaching`, `deleting`. |
+
+Only the whole-project `uniac status` lists the entities. `uniac deploy` and
+`uniac status <service>` carry the mount row on the service and nothing else,
+so an unattached volume — data intact, held by nobody — appears nowhere but
+here. A platform that does not serve the volume read costs this section and
+nothing else: the status still renders, and still exits on its own verdict.
+
+## Failures
+
+`uniac status` has no task tree, so it says what went wrong in an `error`
+block, after whatever state it did establish and a blank line — when the read
+established nothing, that blank line is the run's first byte:
+
+```text
+
+error      auth
+  message  no access token found. Run `uniac auth login` or set UNIAC_ACCESS_TOKEN
+```
+
+| Line | Meaning |
+|---|---|
+| `error` | A code from the closed set in [Exit codes](/cli/exit-codes). Branch on it — never on the message, which is prose for people. |
+| `message` | What happened, for people. A message that spans lines — a transport error quoting an HTTP body — keeps its continuation lines under the `message` column. |
+| `retryable` | `yes` when re-running the identical command could succeed with nothing else changed. Prefer this judgment to your own heuristics. |
+
+```text
+project  my-app-e5f6g7h8
+
+error        unreachable
+  message    read project my-app-e5f6g7h8: GET /api/projects/my-app-e5f6g7h8 returned 530: origin is unreachable
+             error code: 1016
+             ray id: 8f3c2a91
+  retryable  yes
+```
+
+`uniac deploy` says both of those things in the frame instead: the code
+annotates the root line, and the message closes the evidence inset beneath
+the task that broke. **A deploy frame has no `error` block** — the root-line
+code and the exit status are what a consumer branches on.
+
+```text
+✗ deploy main  auth  (0ms)
+  ✓ plan  sha256:e6feea2c0f8d
+  ✗ link
+      resolving deploy target
+      no access token found. Run `uniac auth login` or set UNIAC_ACCESS_TOKEN
+```
+
+Only the path to the failure expands; finished siblings stay one-liners.
+Evidence is what the broken task retained — the progress lines it kept, then
+the error — so the message closes the block rather than being all of it, and
+a task that narrated several steps insets those too. The run above reached
+nothing, so it established no state and none is invented for it: the frame
+is the record alone. A failure that lands before the manifest names a
+deployment leaves the label bare, too: `✗ deploy  manifest  (0ms)`.
+
+When the build is what broke, the board it was drawing stands in for that
+narration — one line per container, `pull <ref>` or `build ./<root>` (just
+`build .` when the root is the project directory), with a step's latest
+status inset beneath it when it has said one — and the build's own error
+still closes the block. Linking had already succeeded here, so the run does
+have state to report:
+
+```text
+✗ deploy main  build  (624ms)
+  ✓ plan  sha256:fc0252a4b82f
+  ✓ link  my-app-e5f6g7h8
+  ✗ build
+      ✗ pull ghcr.io/uniac-ai/does-not-exist:1.0  (623ms)
+      image-pull[{"Platform":"linux/amd64","Ref":"ghcr.io/uniac-ai/does-not-exist:1.0"}]: pull ghcr.io/uniac-ai/does-not-exist:1.0: Error response from daemon: error from registry: denied
+      denied
+
+project  my-app-e5f6g7h8
+```
+
+A retryable failure annotates the root as `<code> — retryable`:
+`✗ deploy main  push — retryable  (136ms)`. A failed run always leaves its
+frame and whatever state it did establish, so never read a non-zero exit as
+"no output" — only the `2` a malformed invocation earns prints none.

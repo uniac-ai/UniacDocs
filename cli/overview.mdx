@@ -1,27 +1,169 @@
 ---
-title: "CLI overview"
-description: "Every uniac command."
+title: "The uniac CLI"
+description: "Every command, its flags, and its behavior."
 ---
 
-The `uniac` CLI is a single Go binary that scaffolds, builds, links, deploys, and runs Uniac packages locally.
+A single Go binary, installed with `npm i -g @uniac/cli` (Node 18 or newer).
 
-For installation, see [Installation](/get-started/installation).
+`deploy` and `status` both report platform state: each prints
+the platform's account of your services through the same
+[state block](/cli/output), and each exits with a
+[typed status](/cli/exit-codes) from the closed set 0, 2–10, 70. Neither
+invents that account — a run that failed before it reached the platform prints
+its failure and no service rows at all, though once **link** names a project
+the block's `project` row appears, read from the local binding. `init`,
+`plan`, `link`, and `auth` never speak that vocabulary: they exit `1` on
+error, `2` on a usage error; `version` always exits `0`.
 
-## Global flags
+`plan` and `deploy` target a **deployment**: the named resource, else the
+manifest's `default`, else its only deployment. `plan`, `deploy`, and
+`status` locate the project directory with `--dir`; `link` uses `-C`.
 
-- `--help` — show help for a command.
-- `--version`, `-v` — print build metadata.
+## `uniac init`
 
-## Commands
+```bash
+uniac init
+```
 
-| Command | Purpose |
-| ------- | ------- |
-| [`uniac init`](/cli/init)       | Scaffold `uniac.json` and a starter file in the current directory. |
-| [`uniac build`](/cli/build)     | Publish a `kind=lib` package to the local store.                   |
-| [`uniac install`](/cli/install) | Resolve `dependencies` and symlink them into `.uniac/packages/`.    |
-| [`uniac link`](/cli/link)       | Bind this project to a remote (or local-dev) Uniac project.        |
-| [`uniac deploy`](/cli/deploy)   | Build, push, and register a deployment.                            |
-| [`uniac auth`](/cli/auth)       | Sign in, inspect, or sign out.                                     |
-| [`uniac dev`](/cli/dev)         | Start, stop, or list local dev stacks.                             |
+Asks for a service name — the default is the directory name lowercased, with
+every character outside `a-z0-9-_` replaced by `-` and leading and trailing
+separators dropped, or `app` when what remains is not a
+[resource name](/concepts/manifest#top-level) the scaffold can use — then
+shows the manifest it will write and asks you to confirm. The result is
+`uniac.yaml` in the current directory: one image-sourced service plus the
+deployment that instantiates it, ready for `uniac plan`. Takes no flags, and
+refuses to overwrite an existing manifest.
 
-Exit codes are documented at [Exit codes](/cli/exit-codes).
+## `uniac plan`
+
+```bash
+uniac plan [--json] [--full] [--dir <path>] [resource]
+```
+
+Resolves a deployment and previews the
+[deployable](/concepts/manifest#the-deployable). `deploy` runs the same
+resolution first, so a manifest that fails `plan` stops `deploy` too, before
+anything is sent anywhere. The two report it differently: `plan` writes
+`Error: <message>` to stderr and exits `1`, `deploy` names `manifest` in the
+run frame and exits `5`.
+
+| Flag | Effect |
+|---|---|
+| `--json` | Emit the deployable artifact as JSON: `deployable`, `digest`, `resource`. |
+| `--full` | Include declaration details: env values, start command, and the definition an instance draws from when the two are named differently. |
+| `--dir <path>` | Project directory holding `uniac.yaml` (default `.`). |
+
+Planning needs no network, no credentials, and no Docker daemon. It reads two
+things: the manifest, and — for a service sourced from `build:` — the project
+tree. The file is decoded whole, and most of its rules are checked across every
+resource it declares — a malformed env key, an instantiation naming a service
+that exists — whichever deployment you name. A handful are checked while `plan`
+composes the target you resolved, so they see only what that deployment
+instantiates; the manifest page
+[names them](/concepts/manifest#what-waits-for-deploy). A defect one of those
+would catch survives a clean plan until you name a target whose set brings it
+into view. For the messages, see
+[what fails at plan time](/concepts/manifest#what-fails-at-plan-time); for the
+rules `plan` passes and `deploy` applies, see
+[what waits for deploy](/concepts/manifest#what-waits-for-deploy).
+
+## `uniac link`
+
+```bash
+uniac link [-C dir] [name|slug]
+```
+
+Binds the directory to a remote [project](/concepts/model#project), writing
+`.uniac/deploy.json` (per-checkout state — gitignore it). With no argument,
+lists the projects on your account and prompts. The directory must already
+hold a `uniac.yaml` — that is checked before the session is — and you need a
+login session or `UNIAC_ACCESS_TOKEN`.
+
+## `uniac deploy`
+
+```bash
+uniac deploy [--dir <path>] [resource]
+```
+
+Deploys to the linked project, in phases, fail-fast:
+
+- **plan** — the same offline resolution, so a broken manifest stops the run
+  before it asks for anything.
+- **link** — resolves the binding and your session. Without a
+  `.uniac/deploy.json` binding or `UNIAC_PROJECT_URL`, drops into the
+  interactive project picker.
+- **build** — obtains one container per service through your local Docker
+  daemon, for `linux/amd64`. A service that declares
+  [`image:`](/concepts/manifest#type-service-and-type-stateful) is pulled with
+  your own Docker credentials, exactly as `docker pull` would. A service that
+  declares [`build:`](/concepts/manifest#the-build-source) is built from your
+  own tree: the CLI serves the build context and the Dockerfile to the
+  daemon's BuildKit builder, filtered by the tree's own `.dockerignore` and
+  nothing else, with no build args. Either way the work happens on every
+  deploy — nothing carries over from the last run — so a repeat is quick only
+  to the extent the daemon's layer cache makes it so.
+- **`push <service>`** — publishes each image to the project registry.
+- **`deploy <service>`** — registers the service, then polls the platform
+  every two seconds for up to five minutes and reports what it settled as.
+  Registration alone is not success.
+
+A reachable daemon is required whether you pull or build, and a daemon the CLI
+cannot reach fails the **build** phase. A build source that is not on disk
+never gets that far: a missing root, context, or Dockerfile is a manifest
+failure, raised in **plan**. What the Dockerfile itself gets wrong — a syntax
+error, a `target` stage that does not exist, a failing `RUN` — fails in
+**build**.
+
+Rejects a deployment instantiating more than one service — compose
+[one deployment per service](/concepts/model#deployment).
+
+## `uniac status`
+
+```bash
+uniac status [--dir <path>] [service]
+```
+
+Reads what the linked project is running and prints the
+[state block](/cli/output); changes nothing. With a service name, reports that
+one service — the whole-project view is the only one that also lists the
+project's volumes. `deploy` and `status` project the same facts through the
+same code, so the two accounts cannot drift — `status` is the authoritative
+re-read whenever a deploy's account looks stale.
+
+A service the project runs appears here whether or not the manifest still
+describes it — for how to retire one, see
+[what is running is not the manifest](/concepts/model#project).
+
+## `uniac auth`
+
+```bash
+uniac auth <login|status|token|logout>
+```
+
+| Subcommand | What it does |
+|---|---|
+| `login` | Browser sign-in; stores the session in `~/.uniac/auth.json` (mode 0600). |
+| `status` | Who is signed in, and until when. |
+| `token` | Print the access token, for `UNIAC_ACCESS_TOKEN`. |
+| `logout` | Delete the stored session. |
+
+`login` flags: `--no-browser` skips opening a browser — the login URL is
+printed either way; `--manual` skips the local callback server and prompts
+you to paste the redirected URL back, independently of `--no-browser`;
+`--host <host>` names the UniacWeb host serving the handoff (default
+`uniac.ai`, env `UNIAC_AUTH_HOST`); `--dev` is shorthand for
+`--host dev.uniac.ai`, and cannot be combined with `--host`.
+
+Only `login` parses flags. `uniac auth -h` prints the subcommand list and
+`uniac auth login -h` prints the flags above; `status`, `token`, and `logout`
+ignore every argument they are given — `uniac auth logout -h` does not print
+help, it logs you out. Only `login` touches the network.
+
+## `uniac version`
+
+```bash
+uniac version
+```
+
+Prints the version, commit, and build time of the binary on your PATH.
+`--version` and `-v` do the same.

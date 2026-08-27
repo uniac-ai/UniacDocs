@@ -1,43 +1,33 @@
 ---
 title: "Uniac"
-description: "Build and deploy distributed services in Python."
+description: "Describe a system in one file; the platform runs it."
 ---
 
-Uniac is a Python framework and managed platform for assembling distributed services from reusable building blocks. Declare a service's dependencies as typed class annotations; Uniac builds, deploys, and wires the topology end-to-end.
+Uniac is a cloud deployment platform. You describe a system of container-based
+services in one `uniac.yaml`, the `uniac` CLI resolves one deployment from it
+into a deployable artifact, and the platform runs it — injecting the service's
+resolved environment, placing its containers on the project's private network,
+addressable by the instance name the deployment gives it, and allocating a
+public address for each exposure claimed, at most one per kind (`http` or
+`tcp`). `uniac deploy` ships one service per deployment, so a multi-service
+system is several deployments in that one file, deployed one at a time. A
+service either names a prebuilt image or points at a tree the CLI builds;
+nothing of Uniac ships inside either one.
+
+The CLI is built agent-first: offline verification, deterministic artifacts,
+typed exit codes on `deploy` and `status`, machine-clean output.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Install, scaffold, deploy. About five minutes.
+    Set up an agent to deploy for you. About five minutes.
   </Card>
-  <Card title="Your first service" icon="code" href="/get-started/your-first-service">
-    A guided walkthrough with explanations at each step.
-  </Card>
-</CardGroup>
-
-## Concepts
-
-<CardGroup cols={2}>
-  <Card title="Services and Systems" icon="cube" href="/concepts/services">
-    The two kinds of Uniac package: reusable building blocks and deployable compositions.
-  </Card>
-  <Card title="Nodes" icon="circle-nodes" href="/concepts/nodes">
-    How a service declares and consumes its dependencies.
+  <Card title="The model" icon="cube" href="/concepts/model">
+    Services, deployments, projects.
   </Card>
   <Card title="The manifest" icon="file-code" href="/concepts/manifest">
-    The `uniac.json` schema.
-  </Card>
-  <Card title="Deployments" icon="rocket-launch" href="/concepts/deployments">
-    Versions, replicas, and the endpoint URL.
-  </Card>
-</CardGroup>
-
-## Reference
-
-<CardGroup cols={2}>
-  <Card title="SDK reference" icon="python" href="/sdk/overview">
-    Every public class and function in the `uniac` Python package.
+    The complete `uniac.yaml` schema.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli/overview">
-    Every `uniac` command and flag.
+    Every command, the run output, the exit codes.
   </Card>
 </CardGroup>

@@ -1,0 +1,155 @@
+---
+title: "The model"
+description: "Services, deployments, and projects."
+---
+
+You describe a system in one `uniac.yaml`, the CLI resolves it into a
+deployable and ships container images to a remote project, and the platform
+runs them. Three nouns carry the whole model.
+
+## Service
+
+A reusable *definition* of one workload's shape: where its container comes
+from, which environment variables, which start command. A service is never
+directly deployable — targeting one is an error.
+
+Its container comes from one of two sources: a prebuilt OCI image named by
+`image:`, or a Docker build of your own tree pointed at by `build:`.
+[The manifest](/concepts/manifest#type-service-and-type-stateful) has the
+source rule and the rest of the service fields.
+
+```yaml
+resources:
+  api:
+    type: service
+    build: ./api                # a directory holding a Dockerfile
+
+  cache:
+    type: service
+    image: "redis:7-alpine"     # any OCI reference
+```
+
+`uniac plan` names the source it resolved for each instance the deployment
+instantiates.
+
+`build:` takes the build root, or an object refining `root`, `context`,
+`dockerfile`, and `target`; [the manifest](/concepts/manifest#the-build-source)
+has the field table. `plan` checks those paths against your tree and nothing
+else — a missing root, context, or Dockerfile fails offline, while the
+Dockerfile's contents stay unread until deploy. The build then runs on your
+machine, against your local Docker daemon, targeting `linux/amd64`. What it
+produces is pushed exactly like a pulled image, so nothing downstream knows
+which source a service used.
+
+`type: stateful` is the same definition capped at a single running instance,
+for workloads like databases where two concurrent instances would corrupt
+state. That cap is the precondition for durable storage: only a `stateful`
+service may declare `volumes:`, and a `type: service` that tries fails with
+``service "db" declares volumes but is not stateful — durable storage needs
+the single-writer guarantee (`type: stateful`)``. A volume declares a name, a
+size, and the path it mounts at; [the manifest](/concepts/manifest#volumes)
+has the keys.
+
+A service declares no port. The project's internal network is
+port-transparent: other services reach yours by name, on whatever port your
+process binds. Liveness is observed on the container process, never by
+probing a port.
+
+## Deployment
+
+An *instantiation*: a map of instance names to the definitions they draw
+from, plus the public exposure claimed for each instance. Resolving a
+deployment yields the deployable, the thing the platform consumes.
+
+**The instance name is the identity.** It is the deployed service's name, its
+internal hostname, its platform identity, the name every
+[`${{...}}` reference](/concepts/manifest#references) resolves against, and
+the prefix on any volume it mounts — a definition's `data` volume mounted by
+the instance `db` is the disk `db.data`. The definition's name is only a
+local label for `from:`.
+
+```yaml
+runtime: yaml
+default: shop
+resources:
+  worker:                                 # definition
+    type: service
+    image: "mendhak/http-https-echo:31"
+    env:
+      GREETING: hello
+
+  shop:                                   # deployment
+    type: deployment
+    services:
+      web:                                # instance name — the deployed identity
+        from: worker
+        public_ports: [{ port: 8080, type: http }]
+```
+
+`uniac deploy` rejects a deployment instantiating more than one service, so a
+multi-service system is several deployments in one manifest, deployed one at
+a time and wired by
+[cross-deployment references](/concepts/manifest#cross-deployment-references).
+
+## Project
+
+The remote destination, bound to your directory by `uniac link`
+(`.uniac/deploy.json`). A project is a flat list of running services; the
+platform holds no grouping above them. Deployments are a client-side
+composition resolved on the way in, so the platform never sees one — what a
+running service is serving is its own version number.
+
+Volumes are project entities of their own, not properties of a container: the
+whole-project `uniac status` lists each with its size and its own lifecycle
+state — including whether a service is holding it.
+
+What is running is not the manifest: deleting a resource from `uniac.yaml`
+does not remove the service, and the CLI has no removal command — retire
+services from the dashboard at [uniac.ai](https://uniac.ai), which also
+covers scaling replicas and deleting projects.
+
+## The loop
+
+```bash
+uniac init      # scaffold uniac.yaml: one service + the deployment instantiating it
+uniac plan      # resolve and preview — offline, no auth, no Docker
+uniac link      # bind this directory to a remote project
+uniac deploy    # resolve + materialize + push + register, then watch it settle
+uniac status    # what the project is running now
+```
+
+**`plan` is the verification loop.** It needs no network, no credentials, and
+no Docker daemon; it applies the manifest's local rules — the ones
+[the manifest page](/concepts/manifest#what-fails-at-plan-time) tabulates, some
+against the whole file and some, the on-disk existence of a `build:` source
+among them, only against the deployment it resolves — and previews the
+resolved deployable, naming it by a shortened digest; `--json` prints the
+artifact itself. That same page lists
+[what waits for deploy](/concepts/manifest#what-waits-for-deploy) — the rules
+`plan` passes and `deploy` applies. Run it after every manifest edit — a
+manifest that fails `plan` fails `deploy` with the same message, before
+anything is sent anywhere.
+
+**Identical inputs yield an identical digest.** The deployable is
+content-addressed: reindenting YAML or reordering resources leaves the digest
+unchanged, so a digest that moved means the declaration actually changed. It
+keys the declaration only — editing the code or the Dockerfile behind a
+`build:` leaves the digest identical, and that build runs on every deploy
+regardless.
+
+## Ownership
+
+| The platform owns | You own |
+|---|---|
+| Running the image it is handed — pulled or built, it cannot tell which | Producing or naming it: your Dockerfile and context for a `build:`, the reference for an `image:` — either way, your local Docker daemon |
+| Injecting the resolved `env` at container start | Everything inside the image |
+| The private network, addressable by service name | Which port your process binds |
+| Public hostnames and allocated TCP ports | Health endpoints, retries, readiness |
+| Resolving `${{...}}` values at deploy time | Declaring the references |
+| Recreating consumers when a provider's values change | Surviving that restart |
+| Provisioning a `stateful` service's volume and mounting it | Everything written to it — schema, migrations, backups |
+
+The container environment is **exactly** the resolved declared `env` —
+nothing is injected beyond it, and nothing of Uniac is added to your image: a
+`build:` service is your Dockerfile, built by your daemon, pushed as it came
+out.

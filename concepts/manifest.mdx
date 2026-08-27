@@ -1,47 +1,487 @@
 ---
 title: "The manifest"
-description: "The uniac.json schema."
+description: "The complete uniac.yaml schema."
 ---
 
-Every Uniac package has a `uniac.json` at its root. The CLI reads it on `build`, `install`, `link`, `dev`, and `deploy`.
+`uniac.yaml` sits at the project root and is the whole static description of a
+system — one file, read by `uniac plan` and `uniac deploy`. Decoding is
+strict: an unknown key anywhere is a hard error, so the field tables below are
+exhaustive, and an invented field (`ports`, `replicas`, `depends_on`) fails the
+manifest rather than being ignored.
 
-## Required fields
+`uniac plan` checks the manifest offline, with no network, no credentials, and
+no Docker daemon: write, plan, read the error, fix. Everything in the
+[plan-time error table](#what-fails-at-plan-time) is caught there; the rules it
+leaves to `deploy` are collected under
+[what waits for deploy](#what-waits-for-deploy), which also marks which
+plan-time rules run only against the resolved target. `plan` reads one thing
+besides the manifest: a [`build`](#the-build-source) source's paths, which must
+exist in your project tree.
 
-| Field         | Type   | Purpose                                                                                              |
-| ------------- | ------ | ---------------------------------------------------------------------------------------------------- |
-| `name`        | string | Package name. Defaults to the directory basename if omitted.                                         |
-| `kind`        | string | `"lib"` or `"app"`. See [Services and Systems](/concepts/services).                                  |
-| `language`    | string | Runtime language. Today: `"python"` only.                                                            |
-| `entrypoint`  | string | `"module:ClassName"` — the `Service` or `System` class the build-time introspect walks.              |
+```yaml uniac.yaml
+runtime: yaml
+default: shop
+resources:
+  worker:
+    type: service
+    image: "mendhak/http-https-echo:31"
+    env:
+      GREETING: hello
 
-## Optional fields
+  shop:
+    type: deployment
+    services:
+      web:
+        from: worker
+        public_ports: [{ port: 8080, type: http }]
+```
 
-| Field                  | Type                | Purpose                                                                                                                       |
-| ---------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `dependencies`         | string[]            | Peer Service names resolved from the local store on `uniac install`.                                                          |
-| `build.command`        | string[]            | Container CMD as a JSON exec-form array. Auto-derived from `language` + `entrypoint` if omitted.                              |
-| `build.baseImage`      | string              | Override the default base image (`python:3.11-slim` for Python).                                                              |
-| `build.systemPackages` | string[]            | `apt-get` packages installed during build.                                                                                    |
-| `init`                 | object              | Map of `__init__` arg names to default values. Forwarded as `UNIAC_INIT_<UPPERCASE_NAME>` env vars at deploy time.            |
+## Top level
 
-## Example
+| Field | Meaning |
+|---|---|
+| `runtime` | Manifest runtime. `yaml` is the only supported value, and the default. |
+| `default` | The resource `uniac plan` / `uniac deploy` act on when none is named. Must name a deployment. |
+| `resources` | Named map of typed resources — the system description. Required. |
 
-```json uniac.json
-{
-  "name": "greeter",
-  "kind": "app",
-  "language": "python",
-  "entrypoint": "app:Greeter",
-  "dependencies": ["logger", "feature-flags"],
-  "build": {
-    "command": ["uvicorn", "app:api", "--host", "0.0.0.0", "--port", "8080"],
-    "baseImage": "python:3.12-slim"
-  },
-  "init": {
-    "greeting": "hello",
-    "log_level": "info"
+Target resolution for both commands: the named resource, else `default`, else
+the manifest's only deployment. With several deployments and no `default`, the
+run fails and lists them.
+
+**Resource names** match `^[a-z0-9]+(?:(?:__?|-+)[a-z0-9]+)*$` — lowercase
+alphanumeric runs joined by interior separators: one or two underscores, or a
+run of dashes of any length. A separator may never lead or trail. The grammar
+is the docker-repository-safe subset, because instance names become image
+repository components. The same grammar constrains service instance names.
+
+## `type: service` and `type: stateful`
+
+Both declare a reusable [service definition](/concepts/model#service) with the
+same body; `stateful` additionally caps the running service at a single
+instance, which is the guarantee `volumes` needs.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `image` | one source | OCI image reference — a prebuilt image the CLI pulls. |
+| `build` | one source | Docker build of your own tree. [Below](#the-build-source). |
+| `env` | no | Environment variables, `NAME: value`. Values may embed references. |
+| `start_command` | no | Overrides the image CMD at the platform layer; the image is untouched. |
+| `volumes` | no | Durable storage. `stateful` only. [Below](#volumes). |
+
+**A service declares exactly one source.** Setting both `image` and `build` is
+an error, and so is setting neither — the first two rows are alternatives, not
+optional fields.
+
+There is no port field and no exposure field on a service — exposure is a
+property of the deployment (`public_ports`, below), and the internal network
+is port-transparent.
+
+**Env key grammar** is `^[A-Za-z_][A-Za-z0-9_]*$`. The key `host` is reserved —
+it is the builtin `${{self.host}}`, and declaring it is a config error.
+
+### The build source
+
+`build` points at a tree in your project and has the CLI build it with your
+local Docker daemon [at deploy time](/cli/overview#uniac-deploy). Write it as a
+path naming the build root:
+
+```yaml
+build: ./api
+```
+
+Or as an object, when you need to refine what that root means. All four keys
+are optional, and `build: "."` and `build: {}` are the same all-defaults
+declaration.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `root` | `.` — the directory holding `uniac.yaml` | The service's source tree. Resolved against the project directory. |
+| `context` | `.` — the root itself | The build context. Resolved against `root`. |
+| `dockerfile` | `Dockerfile` at the root | The Dockerfile to build. Resolved against `root`. |
+| `target` | the Dockerfile's last stage | Which stage of a multi-stage Dockerfile to build. |
+
+Those four are the whole surface: there is no build-args, secrets, ssh,
+platform, cache, or builder-selection field.
+
+**`dockerfile` is anchored at the root, not at the context.** Narrowing
+`context` to a subdirectory does not move where the Dockerfile is looked for:
+both keys resolve against `root`, independently of each other. This is where
+the field parts company with `docker-compose`, which anchors its dockerfile at
+the context.
+
+Each path is confined to the directory it resolves against: `root` may not
+escape the project, and `context` and `dockerfile` may not escape the root.
+Absolute paths are rejected. `context: ".."` fails even though it would still
+land inside the project, because containment is checked per field against that
+field's own base.
+
+```yaml
+resources:
+  api:
+    type: service
+    build:
+      root: services/api
+      context: app
+      dockerfile: deploy/Dockerfile.prod
+      target: production
+```
+
+`uniac plan` renders a built service in the `Building` block as
+`build ./<root>` — just `build .` when the root is the project directory — with
+any non-default refinement in parentheses, against `pull <ref>` for a service
+that declares an `image`:
+
+```text
+Building
+  build ./services/api (context app, dockerfile deploy/Dockerfile.prod, target production)
+  pull redis:7-alpine
+```
+
+In the deployable, the source object carries `build` in place of `ref`. The
+three path keys are dropped at their defaults and `target` is carried as
+written, so an all-defaults build serializes as `{}`:
+
+```json
+"container": {
+  "source": {
+    "build": {
+      "context": "app",
+      "dockerfile": "deploy/Dockerfile.prod",
+      "root": "services/api",
+      "target": "production"
+    }
   }
 }
 ```
 
-`init` values are loaded into your `__init__` keyword args by [`load()`](/sdk/load).
+The digest tracks that serialized object, not the tree: editing your Dockerfile
+leaves it unchanged, and so does any build-field edit the object absorbs — a
+path respelled to the same cleaned path, or `root`, `context`, or `dockerfile`
+written out at its default. `target` is absorbed by nothing: naming the stage
+the Dockerfile would have ended on anyway still reaches the object, and moves
+the digest. A build-field edit that reaches the object moves it.
+
+**What `plan` checks:** that the root exists, the context exists, and the
+dockerfile is readable — three filesystem facts, still with no daemon. Paths
+are read verbatim, so a gitignored build root still plans.
+
+The build itself — Dockerfile syntax, whether the named `target` stage exists,
+whether Docker is running at all — is among
+[what waits for deploy](#what-waits-for-deploy). What the CLI then does with
+the declaration is [`uniac deploy`](/cli/overview#uniac-deploy)'s account.
+
+### `volumes`
+
+A `stateful` service may declare the durable disk it needs. The list holds one
+entry, and all three of its keys are required. An empty list or a bare
+`volumes:` means no volume, exactly as omitting the key does — unlike a bare
+`build:`, which is an error.
+
+| Key | Meaning |
+|---|---|
+| `name` | Local disk name, 1–63 lowercase alphanumerics with interior dashes — no dots, underscores, or uppercase. |
+| `size_gb` | Size in whole gigabytes. A positive integer. |
+| `mount_path` | Where the disk appears inside the container. A normalized absolute path, not `/`. |
+
+```yaml uniac.yaml
+resources:
+  db:
+    type: stateful
+    image: postgres:17-alpine
+    env:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - name: data
+        size_gb: 10
+        mount_path: /var/lib/postgresql/data
+
+  app:
+    type: deployment
+    services:
+      db:
+        from: db
+        public_ports: [{ port: 5432, type: tcp }]
+```
+
+Declaring a volume on a `type: service` is rejected: durable storage needs the
+single-writer guarantee that only `stateful` provides. `volumes` also belongs
+on the service definition, not on a deployment's instantiation — unlike
+`public_ports`, which is a property of the instance.
+
+**The instance name scopes the disk.** `name: data` instantiated as `db`
+becomes the project-wide entity `db.data`, so one definition instantiated twice
+owns two separate disks. The entity name follows from the manifest alone,
+which is what lets the same declaration keep naming the same disk across
+deploys.
+
+```text
+Deploying
+  db (stateful)  postgres:17-alpine  public: 5432 (tcp)  volume: db.data (10GB)
+```
+
+In the deployable it is a single `volume` object under the service, carrying
+the scoped name — never a list:
+
+```json
+"volume": {
+  "mount_path": "/var/lib/postgresql/data",
+  "name": "db.data",
+  "size_gb": 10
+}
+```
+
+`plan` checks the name grammar, the positive size, the absolute mount path, and
+the shape of the composed `<instance>.<local>`. Everything else about the disk —
+which paths the sandbox refuses, what a size change does, what happens to the
+data when the service goes away — is the platform's, and answers at deploy
+time. What a deployed disk is doing, once it exists, reads back through
+[`uniac status`](/cli/output#volume-entities).
+
+## References
+
+Env values may embed references, resolved by the platform at deploy time and
+injected at container start. One grammar everywhere: `${{scope.VAR}}`, where
+`scope` is `self` or an instance name, and `VAR` is a declared variable or
+the builtin `host`.
+
+```yaml
+env:
+  OWN_URL:      "http://${{self.host}}:8080"        # own builtin
+  GREETING_ALT: "${{self.GREETING}}"                # own variable
+  DB_HOST:      "${{database.host}}"                # another instance's builtin
+  DATABASE_URL: "${{database.DATABASE_URL}}"        # another instance's variable
+```
+
+- **Scope names an instance, not a definition.** `${{database.X}}` names the
+  deployed instance `database`, whatever service resource it draws `from`.
+  Getting this backwards is the most common wiring bug.
+- **`host`** is the only builtin — the platform-allocated internal hostname,
+  the one fact the platform contributes to the environment.
+- **Names resolve at plan time; values resolve at deploy time.** `uniac plan`
+  verifies every reference to `self` or to an instance in the deployed set.
+- **No escape syntax exists.** Any `${{` that does not parse as a reference is
+  an error, so a literal `${{` cannot appear in an env value.
+
+Because no service declares a port, a consumer cannot derive one — have the
+provider export the whole connection string and reference that.
+
+### Cross-deployment references
+
+A reference to a name *outside* the deployed set passes through unresolved and
+is resolved remotely against the project's other services. This is how
+services in separate deployments wire together — and why a typo in one cannot
+be caught locally. **A dangling reference never fails a deploy**: the variable
+is left unset and the run reports a `warning` line in the state block.
+
+After a successful deploy the platform re-resolves the project's other
+services and recreates any whose injected values changed, so deploy order is a
+convenience: a consumer deployed before its provider heals once the provider
+lands.
+
+## `type: deployment`
+
+Instantiates services and resolves to the deployable.
+
+| Field | Meaning |
+|---|---|
+| `services` | Map of instance name → instantiation. At least one is required. |
+| `services.<name>.from` | The service resource this instance draws from. Required. |
+| `services.<name>.public_ports` | Public-exposure claim set for this instance. Tri-state, below. |
+
+`plan` resolves a deployment naming several instances, and `deploy` rejects
+one: [one deployment per service](/concepts/model#deployment) is among
+[what waits for deploy](#what-waits-for-deploy).
+
+### `public_ports`
+
+Each claim names your process's own listen port and the kind of ingress. Both
+keys are required; a bare integer is rejected at parse time.
+
+| Kind | What the platform does | Dial |
+|---|---|---|
+| `http` | Terminates HTTPS on a public hostname and routes to port `N`. | `https://<hostname>` |
+| `tcp` | Allocates a public `host:port` and forwards raw TCP to `N` as-is. | `<hostname>:<allocated-port>` |
+
+The hostname — and for `tcp`, the public port — are the platform's to choose;
+read them back from the `endpoint` lines of the [run output](/cli/output).
+The port policy — the range a claim's port must fall in, and the cap of one
+claim per kind — is the platform's too, and
+[waits for deploy](#what-waits-for-deploy).
+
+### The claim set is tri-state
+
+| Written | Meaning |
+|---|---|
+| omitted | Claims nothing. The platform keeps the serving deployment's claims, so a code-only rollout never drops exposure. |
+| `[]` | Claims nothing *and converges* the instance to no public exposure of any kind. |
+| present | Restates the full claim set; the result is exactly what is listed. |
+
+A present list is the whole truth: dropping one entry from a two-entry list
+retracts that exposure. Never "clean up" a `public_ports` block you did not
+intend to change. And expose only the edge: an instance that claims no port is
+still reachable from the project's other services by instance name, which is
+the correct default for databases, caches, and internal APIs. On a new
+instance that means omitting `public_ports`; to retract exposure an instance
+is already serving, write `public_ports: []`.
+
+## What fails at plan time
+
+Every message below is produced offline, before anything is sent anywhere. The
+table collects the authoring mistakes you are likely to hit, not every message
+the manifest can produce.
+
+| Condition | Error |
+|---|---|
+| No `uniac.yaml` in the project directory | `no uniac.yaml found in the project directory` |
+| Unknown field on a service | `field ports not found in type registry.serviceSchema` |
+| Unknown field at the top level | `field version not found in type registry.rawFile` |
+| Unknown field in a `build` object | `field args not found in type registry.fields` |
+| Unknown field in a `volumes` entry | `field class not found in type registry.volumeSchema` |
+| Unknown field on a deployment | `field strategy not found in type registry.deploymentSchema` |
+| Unknown field in an instantiation | `field scale not found in type registry.serviceRef` |
+| No `resources` key | `'resources' is required` |
+| Two resources with one name | `duplicate resource "a"` |
+| Unknown resource `type` | `unknown type "widget" (supported: service, stateful, deployment)` |
+| Resource with no `type` | `resource "a": 'type' is required` |
+| `runtime` other than `yaml` | `runtime "python" is not supported (only "yaml")` |
+| Service with no source | `service "a" declares no source (set image: or build:)` |
+| Service with both sources | `service "a" declares both image and build — a service has one source` |
+| Bare `build:`, or a value that is neither a path nor a mapping | `build: takes a root path or an object; use "." for defaults` |
+| `build` path escaping its base | `build context: ".." escapes the directory it is declared against` |
+| Absolute `build` path | `build root: "/etc" is absolute — build paths are relative` |
+| `build` root missing on disk | `build root "api" does not exist` |
+| `build` context missing on disk | `build context "api/nope" does not exist` |
+| No Dockerfile at the build root | `no Dockerfile at the build root ./api — add one, set build.dockerfile, or set image:` |
+| Named `dockerfile` missing on disk | `dockerfile "api/Dockerfile.prod" not found` |
+| `volumes` on a non-`stateful` service | ``service "db" declares volumes but is not stateful — durable storage needs the single-writer guarantee (`type: stateful`)`` |
+| More than one volume | `service "db" declares 2 volumes; one volume per service for now` |
+| Volume entry missing a key | `volumes[0]: 'name' is required` |
+| Volume name outside the grammar | `volume name "my_data" must be a lowercase label (dashes inside, no dots — the instance name scopes it)` |
+| `size_gb` below 1 | `volume "data" needs a positive size_gb` |
+| `mount_path` relative, trailing-slashed, or `/` | `volume "data": mount_path "/data/" must be a normalized absolute path (not /)` |
+| Composed `<instance>.<local>` off-grammar or over 127 characters | ``composed volume name "<instance>.data" does not fit the platform grammar (`<instance>.<local>`, lowercase, one dot, at most 127 chars)`` |
+| Reserved env key | `env key "host" is reserved for ${{self.host}}` |
+| Env key outside the grammar | `env key "1FOO" is invalid` |
+| Malformed reference | `env U: malformed reference at "${{ Bad.VAR }}" — expected ${{service.VAR}} or ${{self.VAR}}` |
+| `${{self.X}}` with no such own variable | `env U references ${{self.MISSING}} but no such variable is declared` |
+| Reference to an in-set instance's missing variable | `env U references database.NOPE, but "database" declares no such variable (available: host, DATABASE_URL)` |
+| References that never reach a literal | `value-resolution cycle a.X → a.Y → a.X never grounds in a literal` |
+| Unknown ingress kind | `public port 80 claims unknown exposure kind "grpc" (supported: http, tcp)` |
+| Bare integer in `public_ports` | ``cannot unmarshal !!int `8080` into registry.publicPortSchema`` |
+| Claim missing `port` or `type` | `public_ports[0]: 'port' is required` |
+| Instance drawing from a missing definition | `instance "a": no service "nope"` |
+| Instance drawing from a deployment | `instance "y": "d2" is a deployment — only services are instantiable` |
+| Instantiation with no `from` | `service instance "x" names no service definition` |
+| Deployment instantiating nothing | `resource "d" must instantiate at least one service` |
+| Targeting a service | `resource "api" is a service — services are reusable definitions, not directly deployable; instantiate it in a deployment:` … |
+| Naming a resource the manifest does not declare | `no resource "nope" in uniac.yaml (have: api, d)` |
+| `default` naming a service | `default "api" is a service — only deployments are deployable targets` |
+| `default` naming no resource | `default "nope" names no resource (have: api, d)` |
+| Resource name outside the grammar | `resource name "Bad-Name-" must match ^[a-z0-9]+(?:(?:__?\|-+)[a-z0-9]+)*$` |
+| Instance name outside the grammar | `service instance name "Bad_Name-" must match ^[a-z0-9]+(?:(?:__?\|-+)[a-z0-9]+)*$` |
+| Manifest with no deployment | `uniac.yaml declares no deployment — services are reusable definitions; add one:` … |
+| Several deployments, no `default` | `uniac.yaml has multiple deployments and no 'default'; name one (have: d1, d2)` |
+
+Each message is quoted from its distinctive clause on. A run prints it after
+`Error: `, behind whatever named the failure — the resource, the service, the
+instance. Reading the manifest puts `uniac.yaml:` in front of that; the
+top-level decode failure is prefixed `invalid uniac.yaml:` instead. Four
+groups carry no filename. The missing manifest is raised before there is a file
+to name. The four rows that check paths on disk run against the tree once the
+manifest has decoded, so they lead with `service "<instance>":`. The composed
+volume name, the cross-instance variable, and the value cycle are raised while
+composing the deployable, so they lead with `deployment "<name>":`. And the
+four raised while resolving the target — targeting a service, naming a resource
+the manifest does not declare, a manifest with no deployment, several
+deployments and no `default` — carry no prefix at all. The two rows ending in
+`…` continue with an indented YAML snippet showing the deployment to write. The
+six unknown-field rows and the bare integer in `public_ports` come from the
+strict decoder, which reports every node it rejected: the frame ends `yaml:
+unmarshal errors:`, and each rejected node follows on its own indented line
+behind a `line <N>:` marker whose number need not match the line you wrote — a
+body with two bad keys prints two such lines.
+
+## What waits for deploy
+
+A rule is absent from `plan` when the fact it turns on is not in your project
+tree, or — as with the one-service limit — when `deploy` simply reserves the
+rule for itself. Between them they cover what the manifest leaves to `deploy`.
+A second group is not absent at all: `plan` applies it, but only to what the
+resolved target instantiates.
+
+**Applied elsewhere.** These pass `plan` cleanly. Each turns on something
+`plan` has no access to — the platform's policy, the state of the remote
+project, what your Docker daemon makes of your tree — except the one-service
+limit, which is simply `deploy`'s own rule.
+
+| Rule | Applied by |
+|---|---|
+| The port policy: each claim's `port` in 1..65535, and at most one claim per kind (`http`, `tcp`) per instance. | the platform |
+| The disk beyond its [declared shape](#volumes): which mount paths the sandbox refuses, whether the name is free to adopt, and what a changed `size_gb` does to a disk that already exists — a shrink is rejected, a grow is not yet supported, so the size is settled when the disk is first created. | the platform |
+| Whether a service is `service` or `stateful`: the deploy that creates the service fixes its kind, and naming that same service later with the other type is a conflict. | the platform |
+| An `image` reference: whether it is well-formed, and whether it can be pulled. | `deploy`'s build step, against your Docker daemon |
+| The build itself: Dockerfile syntax, whether the named `target` stage exists, what `.dockerignore` drops, whether a daemon is reachable at all. | `deploy`'s build step, against your Docker daemon |
+| A [reference to a name outside the deployed set](#cross-deployment-references): it is resolved against the project's other services, and one that resolves to nothing leaves the variable unset and reports a `warning` rather than failing. | the platform |
+| A deployment instantiating more than one service. | `uniac deploy`, under the `manifest` code, before it reaches the network |
+
+**Scoped to the resolved target.** These rows of the
+[plan-time table](#what-fails-at-plan-time) are decided while `plan` composes
+one deployment, so they see only what that deployment instantiates:
+
+- that a `build` source's `root`, `context`, and `dockerfile` exist on disk
+- the composed `<instance>.<local>` volume name
+- a reference to another instance in the set naming a variable that instance
+  declares
+- value-resolution cycles
+
+A rule the manifest decides on its own — a malformed env key, a service with
+two sources — fails whichever deployment you name. These do not: the same
+defect in a resource your target never instantiates passes, until you plan the
+deployment that does instantiate it. `deploy` resolves a target the same way
+and runs them against it.
+
+## The deployable
+
+`uniac plan --json` prints the resolved resource, its digest, and the
+deployable — the canonical, target-free artifact the platform consumes. Run
+against the manifest at the top of this page:
+
+```json
+{
+  "deployable": {
+    "kind": "deployable",
+    "services": [
+      {
+        "container": {
+          "source": {
+            "ref": "mendhak/http-https-echo:31"
+          }
+        },
+        "env": {
+          "GREETING": "hello"
+        },
+        "name": "web",
+        "public_ports": [
+          {
+            "port": 8080,
+            "type": "http"
+          }
+        ]
+      }
+    ]
+  },
+  "digest": "sha256:8f53d6a7a9677122785ed8fb2e66fae873deed1295cc84f19ff12347054cfdf4",
+  "resource": "shop"
+}
+```
+
+A service's `source` carries either `ref` or [`build`](#the-build-source) —
+that key is how you tell a pulled service from a built one. A `stateful`
+service adds `"kind": "stateful"` and, when it declares one, its
+[`volume`](#volumes).
+
+The digest is content-addressed: keys are emitted in sorted order at every
+level, services are name-sorted, claim lists canonicalized, env keys ordered —
+so reindenting the YAML or reordering resources produces a byte-identical
+artifact and the same digest. Read the deployable, not the YAML, when you need
+to know what will actually ship.
