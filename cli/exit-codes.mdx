@@ -4,44 +4,80 @@ description: "The typed exit statuses of deploy and status."
 ---
 
 `uniac deploy` and `uniac status` exit with a status from a closed set, each
-paired with an error code in the [run output](/cli/output#failures). Branch on
-the exit status; read the `error` code for detail; never match on the message,
-which is prose for people.
+paired with an error code. A run that gets as far as reporting also prints
+that code — as the `error` row of `status`'s block, and as the annotation on
+the root line of `deploy`'s frame (see [Run output](/cli/output#failures)); a
+run rejected at argument parsing prints no code at all. Branch on the exit
+status; read the code for detail; never match on the message, which is prose
+for people.
 
-**1 is deliberately unassigned**, so a bare `exit 1` from some future
-dependency can never be mistaken for a meaning the CLI assigned.
+Within this set **1 is deliberately unassigned**, so a bare `exit 1` from
+some future dependency can never be mistaken for a meaning `deploy` or
+`status` assigned.
 
 | Exit | `error` code | Meaning | What to do |
 |---|---|---|---|
 | 0 | — | Success. | Read the state block. |
-| 2 | `usage` | Malformed invocation. Nothing was sent anywhere. | Fix the arguments. |
-| 3 | `auth` | Missing or rejected credential. | `uniac auth login`, or set `UNIAC_ACCESS_TOKEN`. |
-| 4 | `not_linked` | Directory not bound to a remote project. | `uniac link`, or set `UNIAC_PROJECT_URL`. |
-| 5 | `manifest` | `uniac.yaml` does not describe a valid system. | Fix the manifest; `uniac plan` reproduces the error offline. |
-| 6 | `build` | Failed obtaining or materializing a container. | Check the image reference and the Docker daemon. |
-| 7 | `push` | Failed publishing the image to the registry. | Usually retryable. |
-| 8 | `deploy_failed` | The platform's deployment task failed. | Terminal unless `retryable` says otherwise. |
-| 9 | `unreachable` | The platform did not answer; nothing was decided either way. | Retry with backoff. |
-| 10 | `pending` | Not a failure — the work is still running. | Re-observe with `uniac status`. |
-| 70 | `internal` | A defect in the CLI. | Report it with the message. |
+| 2 | `usage` | Malformed invocation. Nothing was sent anywhere, and nothing reaches stdout: the flag error and the command's usage go to stderr. The code itself is reserved — part of the vocabulary, emitted by nothing. | Fix the arguments. |
+| 3 | `auth` | Missing credential — none on disk, none in the environment, or the stored session has expired. A credential the platform *rejects* lands elsewhere; see the disagreements below. | `uniac auth login`, or set `UNIAC_ACCESS_TOKEN`. |
+| 4 | `not_linked` | Reserved: part of the vocabulary, emitted by nothing. | See the disagreements below. |
+| 5 | `manifest` | `uniac.yaml` is missing from the project directory, or does not describe a valid system. | Add or fix the manifest; `uniac plan` reproduces most of these offline. |
+| 6 | `build` | Failed obtaining a container — a pull, a Dockerfile build, or reaching the local Docker daemon. | Read the build board in the frame; check that the daemon is running. |
+| 7 | `push` | Failed publishing the image to the project registry. | Retryable. |
+| 8 | `deploy_failed` | The platform's deployment task failed. | Terminal unless `retryable` says otherwise — and read the disagreements below. |
+| 9 | `unreachable` | The platform did not answer: a transport error, or an edge reporting no origin (502, 503, 504, 521, 522, 523, 530). Nothing was decided either way. | Retry with backoff. |
+| 10 | `pending` | Reserved: part of the vocabulary, emitted by nothing. | See the disagreements below. |
+| 70 | `internal` | A defect in the CLI — and the code any failure the CLI cannot classify falls back to; read the disagreements below. | Read the message first; report it when the message names nothing you can fix. |
 
 The set is closed and additions are additive — treat any unrecognized code as
 `internal` and surface the message rather than guessing.
 
-## Known gaps in v0.3.8
+`deploy` assigns the code by the phase that failed, which decides where a
+build problem lands: a service whose `build:` root, context, or `Dockerfile`
+is missing exits `5`, because the source is checked while the manifest
+resolves and before anything is built — `uniac plan` reproduces that check
+offline. `6` is the build itself failing, or no daemon to run it on.
 
-Some conditions that have a code of their own still arrive as `internal` (70).
-The message is accurate in each case — read it before calling the run a CLI
-defect:
+## Where the code and the condition disagree
 
-- An unlinked project directory reports `internal` rather than `not_linked`;
-  the message says "project not linked" and how to link.
-- A deploy still rolling out when the five-minute watch deadline passes
-  reports `internal` rather than `pending`; the message says "still …
-  after 5m0s — check the dashboard". The deployment itself continues
-  server-side; `uniac status` re-observes it.
+Four conditions arrive under a code that describes them poorly — two of them
+because `not_linked` and `pending` are reserved. Read the message before
+acting on the code:
+
+- `uniac status` in a directory with no link binding, run with a credential,
+  exits `70` (`internal`): "project not linked. Run `uniac link` or set
+  UNIAC_PROJECT_URL". Without a credential the auth check fires first and it
+  exits `3` instead; `uniac deploy` never reaches this error, because an
+  unlinked directory sends it to the interactive project picker. Where the
+  target carries no project name — an older binding, or `UNIAC_PROJECT_URL`,
+  which supplies none — `uniac status` exits `3` (`auth`): "this directory is
+  not linked to a project. Run `uniac link` first".
+- Once `deploy` holds a credential, every failure of its `link` phase exits
+  `70` (`internal`), whatever the cause: a platform it cannot reach, an
+  account with no projects, a credential the platform rejects, a project
+  picker nobody answered. The code says nothing about which one it was — read
+  the `link` child's message.
+- A deploy still rolling out when the five-minute settle deadline passes exits
+  `8` (`deploy_failed`), saying
+  `deploy <service>: still <step> after 5m0s — check the dashboard`. The
+  rollout continues platform-side, so this `8` is not terminal — the run
+  stopped watching, the deployment did not stop. Re-observe with
+  `uniac status`.
+- `uniac status` exits `8` (`deploy_failed`) when the platform read fails with
+  a non-2xx status outside the unreachable set above — a rejected credential
+  (401, 403) included. Nothing was deployed, and nothing failed to deploy.
 
 ## Other commands
 
-`init`, `plan`, `link`, and `auth` are human-oriented and use plain statuses:
-`0` success, `1` error, `2` usage error.
+Everything outside `deploy` and `status` is human-oriented and uses plain
+statuses: `0` success, `1` error, `2` usage error. That covers `init`,
+`plan`, `link`, and `auth`; `version`, which is always `0`; and a bare or
+unknown invocation, which prints the subcommand list to stderr and exits `2`.
+
+An error `uniac plan` raises too — the manifest failing to resolve, or a
+`build:` root, context, or `Dockerfile` that does not exist — exits `5` under
+`deploy` and `1` under `plan`, with the identical message. Not every `5`
+reproduces there; a deployment instantiating more than one service, for one,
+passes `plan` and is rejected only by `deploy`. The manifest page lists [what
+waits for deploy](/concepts/manifest#what-waits-for-deploy) — the rules `plan`
+passes and `deploy` applies.

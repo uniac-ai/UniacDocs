@@ -4,14 +4,18 @@ description: "Describe a system in one file; the platform runs it."
 ---
 
 Uniac is a cloud deployment platform. You describe a system of container-based
-services in one `uniac.yaml`, the `uniac` CLI resolves it into a deployable
-artifact, and the platform runs it — injecting each service's resolved
-environment, placing containers on a private network addressable by service
-name, and allocating public addresses for whatever you claim. Nothing of
-Uniac ships inside your image.
+services in one `uniac.yaml`, the `uniac` CLI resolves one deployment from it
+into a deployable artifact, and the platform runs it — injecting the service's
+resolved environment, placing its containers on the project's private network,
+addressable by the instance name the deployment gives it, and allocating a
+public address for each exposure claimed, at most one per kind (`http` or
+`tcp`). `uniac deploy` ships one service per deployment, so a multi-service
+system is several deployments in that one file, deployed one at a time. A
+service either names a prebuilt image or points at a tree the CLI builds;
+nothing of Uniac ships inside either one.
 
 The CLI is built agent-first: offline verification, deterministic artifacts,
-typed exit codes, machine-clean output.
+typed exit codes on `deploy` and `status`, machine-clean output.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">

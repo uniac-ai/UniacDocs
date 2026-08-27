@@ -75,11 +75,6 @@
           "anchor": "Dashboard",
           "href": "https://uniac.ai",
           "icon": "gauge"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/uniac-ai/Uniac",
-          "icon": "github"
         }
       ]
     }
@@ -92,6 +87,10 @@
     { "source": "/sdk/nodespec", "destination": "/concepts/manifest" },
     { "source": "/sdk/load", "destination": "/concepts/manifest" },
     { "source": "/sdk/exceptions", "destination": "/cli/exit-codes" },
+    { "source": "/sdk/fastapi-service", "destination": "/" },
+    { "source": "/sdk/service-client", "destination": "/" },
+    { "source": "/sdk/ai-primitives", "destination": "/" },
+    { "source": "/sdk/changelog", "destination": "/" },
     { "source": "/concepts/nodes", "destination": "/concepts/manifest" },
     { "source": "/concepts/services", "destination": "/concepts/model" },
     { "source": "/concepts/deployments", "destination": "/concepts/model" },
@@ -110,11 +109,56 @@
     { "source": "/cli/deploy", "destination": "/cli/overview" },
     { "source": "/cli/status", "destination": "/cli/overview" },
     { "source": "/cli/auth", "destination": "/cli/overview" },
+    { "source": "/cli/config", "destination": "/cli/overview" },
+    { "source": "/cli/sim", "destination": "/cli/overview" },
     { "source": "/guides/headless", "destination": "/quickstart" },
     { "source": "/guides/agents", "destination": "/quickstart" },
     { "source": "/guides/multi-service", "destination": "/concepts/manifest" },
     { "source": "/dashboard/overview", "destination": "/" },
-    { "source": "/platform-api/overview", "destination": "/cli/overview" }
+    { "source": "/dashboard/billing", "destination": "/" },
+    { "source": "/dashboard/teams-and-members", "destination": "/" },
+    { "source": "/platform-api/overview", "destination": "/cli/overview" },
+    { "source": "/services/configuration", "destination": "/concepts/manifest" },
+    { "source": "/services/secrets", "destination": "/concepts/manifest" },
+    { "source": "/services/dependencies", "destination": "/concepts/manifest" },
+    { "source": "/services/service-to-service", "destination": "/concepts/model" },
+    { "source": "/services/fastapi-service", "destination": "/" },
+    { "source": "/services/routing-and-handlers", "destination": "/" },
+    { "source": "/services/ai-primitives", "destination": "/" },
+    { "source": "/local/simulator", "destination": "/cli/overview" },
+    { "source": "/local/iterating", "destination": "/cli/overview" },
+    { "source": "/local/multi-service", "destination": "/concepts/manifest" },
+    { "source": "/deploy/first-deploy", "destination": "/quickstart" },
+    { "source": "/deploy/environments", "destination": "/concepts/model" },
+    { "source": "/deploy/rollout-and-rollback", "destination": "/cli/overview" },
+    { "source": "/deploy/custom-domains", "destination": "/" },
+    { "source": "/operate/troubleshooting", "destination": "/cli/exit-codes" },
+    { "source": "/operate/scaling", "destination": "/concepts/model" },
+    { "source": "/operate/logs", "destination": "/" },
+    { "source": "/operate/metrics", "destination": "/" },
+    { "source": "/recipes/multi-service-app", "destination": "/concepts/manifest" },
+    { "source": "/recipes/background-job", "destination": "/" },
+    { "source": "/recipes/call-anthropic", "destination": "/" },
+    { "source": "/recipes/call-openai", "destination": "/" },
+    { "source": "/recipes/scheduled-task", "destination": "/" },
+    { "source": "/recipes/webhook-receiver", "destination": "/" },
+    { "source": "/ai-tools/claude-code", "destination": "/quickstart" },
+    { "source": "/ai-tools/cursor", "destination": "/quickstart" },
+    { "source": "/ai-tools/windsurf", "destination": "/quickstart" },
+    { "source": "/account/pricing", "destination": "/" },
+    { "source": "/account/limits", "destination": "/" },
+    { "source": "/essentials/markdown", "destination": "/" },
+    { "source": "/essentials/code", "destination": "/" },
+    { "source": "/essentials/images", "destination": "/" },
+    { "source": "/essentials/navigation", "destination": "/" },
+    { "source": "/essentials/reusable-snippets", "destination": "/" },
+    { "source": "/essentials/settings", "destination": "/" },
+    { "source": "/development", "destination": "/" },
+    { "source": "/api-reference/introduction", "destination": "/" },
+    { "source": "/api-reference/endpoint/get", "destination": "/" },
+    { "source": "/api-reference/endpoint/create", "destination": "/" },
+    { "source": "/api-reference/endpoint/delete", "destination": "/" },
+    { "source": "/api-reference/endpoint/webhook", "destination": "/" }
   ],
   "logo": {
     "light": "/logo/light.png",
@@ -151,8 +195,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/uniac",
-      "github": "https://github.com/uniac-ai/Uniac"
+      "x": "https://x.com/uniac"
     }
   }
 }

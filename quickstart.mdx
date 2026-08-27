@@ -5,14 +5,17 @@ description: "Set up an agent to deploy on Uniac."
 
 By the end, a coding agent — Claude Code, Codex, or anything that reads
 `~/.agents/skills` — can take your application from "deploy this" to a running
-service, and you can verify everything it did. You need Node 18+, a running
-Docker daemon, and a prebuilt container image; Uniac deploys images, it does
-not build them.
+service, and you can verify everything it did. You need Node 18+ and a running
+Docker daemon: Docker builds your image from a `Dockerfile` in your tree, or
+pulls a prebuilt one you name.
 
-## 1. Install the CLI and log in
+## 1. Create a project and sign in the CLI
 
-The two steps that need a human: installing the binary the agent will drive,
-and authenticating it.
+What needs a human: a project on your account, the binary the agent will
+drive, and a session on it. Create the project in the dashboard at
+[uniac.ai](https://uniac.ai) — `uniac link` in step 3 binds this directory to
+a project that already exists, and stops with `no projects on this account`
+if there is none. Then install the CLI and log in:
 
 ```bash
 npm i -g @uniac/cli
@@ -20,8 +23,12 @@ uniac auth login
 ```
 
 `login` opens a browser and stores the session in `~/.uniac/auth.json`; every
-`uniac` command the agent runs uses it. For machines without a browser, see
-[Headless environments](#headless-environments) below.
+command that reaches the platform — `deploy`, `status`, `link` — uses it. On a
+machine with no browser of its own, `uniac auth login --manual` prints the
+handoff URL, you complete the login in a browser anywhere, and paste the
+redirected URL back — see [`uniac auth`](/cli/overview#uniac-auth). For CI and
+other unattended hosts, see [Headless environments](#headless-environments)
+below.
 
 ## 2. Give your agent the contracts
 
@@ -29,8 +36,8 @@ uniac auth login
 git clone https://github.com/uniac-ai/UniacAppSkill && bash UniacAppSkill/install.sh
 ```
 
-This installs the Uniac agent skills: the model, the full manifest schema,
-the CLI's output and exit-code contracts, and multi-service composition. The
+This installs the Uniac agent skills: the model, the full manifest schema, the
+CLI's output and exit-code contracts, and how to compose several services. The
 agent works from the shipped contracts instead of guessing from memory.
 
 ## 3. Ask for a deployment
@@ -38,7 +45,7 @@ agent works from the shipped contracts instead of guessing from memory.
 Tell the agent what should run, not which commands to run:
 
 ```text
-Deploy this on Uniac: image ghcr.io/acme/api:1.4.0, listening on 8080, public over HTTP.
+Deploy this on Uniac: build the Dockerfile in this repo, listening on 8080, public over HTTP.
 ```
 
 The agent authors `uniac.yaml` — one file, the whole system description:
@@ -49,7 +56,7 @@ default: main
 resources:
   api:
     type: service
-    image: ghcr.io/acme/api:1.4.0
+    build: .
   main:
     type: deployment
     services:
@@ -58,35 +65,32 @@ resources:
         public_ports: [{ port: 8080, type: http }]
 ```
 
-and verifies it with `uniac plan` — offline, no credentials, no Docker. A
-manifest that fails `plan` fails `deploy` with the same error, so this is
-where the agent iterates:
+`build: .` builds the `Dockerfile` at the project root; `image:` names a
+prebuilt OCI reference to pull instead. A service declares exactly one of them.
+Builds run on your local Docker daemon and target `linux/amd64`. The full
+`build` object — `root`, `context`, `dockerfile`, `target` — is in
+[the manifest schema](/concepts/manifest).
+
+The agent then verifies with `uniac plan`, which needs no network, no
+credentials, and no Docker: it reads the manifest and checks the build source
+against your tree. A manifest that fails `plan` fails `deploy` with the same
+error, so this is where the agent iterates:
 
 ```text
 Deployment: main
-Artifact:   sha256:d15249bcf885
+Artifact:   sha256:1e863f0071c1
 
 Building
-  pull ghcr.io/acme/api:1.4.0
+  build .
 
 Deploying
-  api  ghcr.io/acme/api:1.4.0  public: 8080 (http)
+  api  build .  public: 8080 (http)
 ```
 
 Once the plan is clean, the agent binds the directory to a project
-(`uniac link`) and ships (`uniac deploy`), which pushes the image, registers
-the deployment, and watches until the platform settles — ending with the
-state block:
-
-```text
-project  my-app-e5f6g7h8
-
-service  api  v1
-  image  ghcr.io/acme/api:1.4.0
-  digest  sha256:…
-  status  running (1/1)
-  endpoint  https://<allocated-host>.svc.uniac.ai → :8080
-```
+(`uniac link my-app` — bare `uniac link` prompts you to pick one instead) and
+ships (`uniac deploy`), which builds the image, pushes it, registers the
+service, and watches until the platform settles.
 
 ## 4. Verify what the agent did
 
@@ -94,53 +98,89 @@ service  api  v1
 uniac status
 ```
 
-Re-observes the project and prints the same state block; it changes nothing.
-The `endpoint` line is your service's public address, `v1` is the serving
-deployment, and a `warning` line is a condition worth reading. Everything the
-agent did is re-readable — the platform's account, not the agent's.
+Re-observes the project and prints the state block; it changes nothing:
+
+```text
+project  my-app
+
+service     api  v1
+  status    running (1/1)
+  endpoint  http  https://khjngx7iqpu03qux.svc.uniac.ai → :8080
+```
+
+On the `endpoint` row, `http` is the ingress kind, the address is what a client
+dials, and `:8080` is your own listen port. `v1` is the serving deployment, and
+a `hold` or `warning` row is a condition worth reading — the whole row set is in
+the [run output](/cli/output). Everything the agent did is re-readable: the
+platform's account, not the agent's.
 
 Prefer to drive the commands yourself? They are all in the
 [CLI reference](/cli/overview).
 
 ## The contract the agent works against
 
-- **`uniac plan` is the test suite for `uniac.yaml`.** It reproduces every
-  [manifest error](/concepts/manifest#what-fails-at-plan-time) offline, and
-  `uniac plan --json | jq -r .digest` is a content-addressed change detector —
-  a moved digest means the system moved.
-- **Exit statuses are typed and closed** — branch on them, read the `error`
-  code in the [run output](/cli/output) for detail, and never match on the
-  message: it is prose for people. See [Exit codes](/cli/exit-codes).
-- **Check `warning` lines on every deploy.** A dangling
-  [cross-deployment reference](/concepts/manifest#cross-deployment-references)
-  does not fail the run; it leaves the variable unset and warns.
+- **`uniac plan` is the test suite for `uniac.yaml`.** It reproduces
+  [everything that fails at plan time](/concepts/manifest#what-fails-at-plan-time)
+  offline, and `uniac plan --json | jq -r .digest` content-addresses the
+  declaration — a moved digest means the declaration moved; an unmoved one
+  does not mean your code stayed put, since editing the Dockerfile or the
+  application source behind a `build:` leaves it identical. It is not the
+  whole rule set: the manifest page lists
+  [what waits for deploy](/concepts/manifest#what-waits-for-deploy), among
+  them the limit of one service per deployment — so compose
+  [one deployment per service](/concepts/model#deployment).
+- **`uniac deploy` and `uniac status` exit with typed statuses from a closed
+  set** — branch on them, read the `error` code in the
+  [run output](/cli/output) for detail, and never match on the message: it is
+  prose for people. `plan`, `init`, `link`, and `auth` are human-oriented
+  instead: `0`, `1`, `2`. See [Exit codes](/cli/exit-codes).
+- **Check `warning` lines on every deploy.** A warning never fails the run, so
+  a clean exit is not a clean state; the [run output](/cli/output) names every
+  source.
 - **Interrupting a deploy does not cancel the platform-side work** — `uniac
   status` re-observes where it landed.
 
 ## Headless environments
 
-For CI or an agent host without a browser, skip `uniac auth login` and
-`uniac link` and set two variables — everything else works the same:
+For CI and other unattended hosts, skip `uniac auth login` and set
+`UNIAC_ACCESS_TOKEN` instead:
 
 ```bash
-export UNIAC_ACCESS_TOKEN="…"                 # from `uniac auth token` on a logged-in machine
-export UNIAC_PROJECT_URL="my-app-e5f6g7h8"    # full URL or bare slug
+export UNIAC_ACCESS_TOKEN="…"    # from `uniac auth token` on a logged-in machine
 ```
 
+`uniac link` does not need the browser either: an argument that is a slug, or
+a name only one project carries, links straight through without prompting.
+Bare `uniac link`, or a name more than one project carries, opens the picker
+instead — which an unattended caller cannot answer. Link the directory: the
+binding is where `uniac status` gets the project name in step 4.
+
 Without a link binding and without `UNIAC_PROJECT_URL`, `uniac deploy` drops
-into an interactive project picker — which hangs a non-interactive caller, so
-always set one of them in CI. Docker must be available on the runner.
+into that picker, which fails a non-interactive caller: with stdin at
+`/dev/null` it exits `70` on "no selection made", and with stdin an open pipe
+nobody writes to it blocks at the prompt. A host with no binding at all sets
+`UNIAC_PROJECT_URL` instead, which names the deploy target on its own — but it
+carries no project name, and the project name is what the platform's read path
+is keyed on. While it is set, `uniac status` exits `3`, and `uniac deploy`
+stops at the accepted registration instead of watching the deployment settle:
+no settled status, and a `state unread` warning on the service it deployed.
+Prefer the binding wherever the host can hold one. Docker must be available on
+the runner — `uniac deploy` needs it whether the service's image is pulled or
+built.
+
+What an unattended host sets for a deploy-and-verify run against the
+production platform — the login flow has its own variable, under
+[`uniac auth`](/cli/overview#uniac-auth):
 
 | Variable | Effect |
 |---|---|
-| `UNIAC_ACCESS_TOKEN` | Bypasses interactive login. |
-| `UNIAC_PROJECT_URL` | Targets a project, bypassing `.uniac/deploy.json` and the picker. |
+| `UNIAC_ACCESS_TOKEN` | Stands in for the browser login; read ahead of `~/.uniac/auth.json`. |
+| `UNIAC_PROJECT_URL` | Names the deploy target — full URL or bare slug — bypassing `.uniac/deploy.json` and the picker. |
 | `UNIAC_PROGRESS` | `1` forces progress narration on stderr, `0` silences it. Never affects stdout. |
 | `UNIAC_STORE_DIR` | Local artifact store location (default `~/.uniac/store`). |
-| `UNIAC_AUTH_HOST` | Host serving the `/cli/auth` login handoff (default `uniac.ai`). |
 
-Narration goes to stderr only when stderr is a terminal, so CI logs stay
-clean by default; `UNIAC_PROGRESS=1` shows live progress anyway.
+Narration goes to stderr only when stderr is a terminal with real width, so CI
+logs stay clean by default; `UNIAC_PROGRESS=1` streams progress lines anyway.
 
 ## Next
 
