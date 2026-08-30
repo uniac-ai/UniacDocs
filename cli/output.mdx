@@ -161,6 +161,20 @@ nothing, so it established no state and none is invented for it: the frame
 is the record alone. A failure that lands before the manifest names a
 deployment leaves the label bare, too: `✗ deploy  manifest  (0ms)`.
 
+Where the evidence can name the next command, it does. A deploy on an
+account that holds no projects stops in the same `link` task under
+`not_linked`, and the inset is the remediation:
+
+```text
+✗ deploy main  not_linked  (2ms)
+  ✓ plan  sha256:788cc3d57301
+  ✗ link
+      linking project
+      no projects on this account, so there is nothing to link
+      create one with `uniac project create <name>`, then run `uniac link <name>`
+      `uniac auth status` shows which account this session is signed in to
+```
+
 When the build is what broke, the board it was drawing stands in for that
 narration — one line per container, `pull <ref>` or `build ./<root>` (just
 `build .` when the root is the project directory), with a step's latest

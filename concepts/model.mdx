@@ -93,11 +93,13 @@ a time and wired by
 
 ## Project
 
-The remote destination, bound to your directory by `uniac link`
-(`.uniac/deploy.json`). A project is a flat list of running services; the
-platform holds no grouping above them. Deployments are a client-side
-composition resolved on the way in, so the platform never sees one — what a
-running service is serving is its own version number.
+The remote destination, created by `uniac project create <name>` and bound to
+your directory by `uniac link` (`.uniac/deploy.json`). The two are separate
+acts: linking never creates, and creating never binds. A project is a flat
+list of running services; the platform holds no grouping above them.
+Deployments are a client-side composition resolved on the way in, so the
+platform never sees one — what a running service is serving is its own
+version number.
 
 Volumes are project entities of their own, not properties of a container: the
 whole-project `uniac status` lists each with its size and its own lifecycle
@@ -111,11 +113,12 @@ covers scaling replicas and deleting projects.
 ## The loop
 
 ```bash
-uniac init      # scaffold uniac.yaml: one service + the deployment instantiating it
-uniac plan      # resolve and preview — offline, no auth, no Docker
-uniac link      # bind this directory to a remote project
-uniac deploy    # resolve + materialize + push + register, then watch it settle
-uniac status    # what the project is running now
+uniac init             # scaffold uniac.yaml: one service + the deployment instantiating it
+uniac plan             # resolve and preview — offline, no auth, no Docker
+uniac project create   # create the remote project (once per project)
+uniac link             # bind this directory to a remote project
+uniac deploy           # resolve + materialize + push + register, then watch it settle
+uniac status           # what the project is running now
 ```
 
 **`plan` is the verification loop.** It needs no network, no credentials, and

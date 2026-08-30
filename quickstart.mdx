@@ -9,36 +9,52 @@ service, and you can verify everything it did. You need Node 18+ and a running
 Docker daemon: Docker builds your image from a `Dockerfile` in your tree, or
 pulls a prebuilt one you name.
 
-## 1. Create a project and sign in the CLI
+## 1. Set up this machine
 
-What needs a human: a project on your account, the binary the agent will
-drive, and a session on it. Create the project in the dashboard at
-[uniac.ai](https://uniac.ai) — `uniac link` in step 3 binds this directory to
-a project that already exists, and stops with `no projects on this account`
-if there is none. Then install the CLI and log in:
+Two commands, once per machine, whatever you go on to build. Your agent can
+run both itself — tell it to set this machine up for Uniac:
 
 ```bash
-npm i -g @uniac/cli
-uniac auth login
+npx skills add uniac-ai/agent-skills -g
+npx -y @uniac/cli auth login
 ```
 
-`login` opens a browser and stores the session in `~/.uniac/auth.json`; every
-command that reaches the platform — `deploy`, `status`, `link` — uses it. On a
-machine with no browser of its own, `uniac auth login --manual` prints the
-handoff URL, you complete the login in a browser anywhere, and paste the
-redirected URL back — see [`uniac auth`](/cli/overview#uniac-auth). For CI and
-other unattended hosts, see [Headless environments](#headless-environments)
-below.
+The first installs the `uniac` agent skill globally, for every agent on the
+machine that reads `~/.agents/skills`: the model, the full manifest schema,
+the CLI's output and exit-code contracts, and how to compose several
+services. The agent works from the shipped contracts instead of guessing from
+memory. Re-running the same command updates it.
 
-## 2. Give your agent the contracts
+The second opens a browser — sign in or sign up, once — and stores the session
+in `~/.uniac/auth.json`; every command that reaches the platform (`deploy`,
+`status`, `link`, `project`) uses it. On a machine with no browser of its own,
+`uniac auth login --manual` prints the handoff URL, you complete the login in
+a browser anywhere, and paste the redirected URL back — see
+[`uniac auth`](/cli/overview#uniac-auth). For CI and other unattended hosts,
+see [Headless environments](#headless-environments) below.
+
+Nothing project-scoped exists yet: no manifest, no project, no binding. Those
+arrive in step 2, at first contact with a project. `npx -y @uniac/cli` runs
+the CLI without installing it; `npm i -g @uniac/cli` puts `uniac` on your
+PATH if you would rather have it there.
+
+## 2. Create a project
+
+A project is the account-side home your services deploy into. Creating one is
+its own step — `uniac link` binds to a project that already exists, and
+`uniac deploy` stops at exit `4` on an account with no projects rather than
+inventing one:
 
 ```bash
-git clone https://github.com/uniac-ai/UniacAppSkill && bash UniacAppSkill/install.sh
+uniac project create my-app
 ```
 
-This installs the Uniac agent skills: the model, the full manifest schema, the
-CLI's output and exit-code contracts, and how to compose several services. The
-agent works from the shipped contracts instead of guessing from memory.
+```text
+Created project my-app (my-app-e5f6g7h8).
+```
+
+The slug in parentheses is the platform's, and it is what `link` writes into
+the binding. Creating a project writes nothing locally.
 
 ## 3. Ask for a deployment
 
@@ -114,6 +130,10 @@ a `hold` or `warning` row is a condition worth reading — the whole row set is 
 the [run output](/cli/output). Everything the agent did is re-readable: the
 platform's account, not the agent's.
 
+Step 1 does not repeat. In the next directory you open, the agent already
+holds the contracts and the session: ask it for something running and it
+starts at step 2.
+
 Prefer to drive the commands yourself? They are all in the
 [CLI reference](/cli/overview).
 
@@ -158,7 +178,9 @@ binding is where `uniac status` gets the project name in step 4.
 Without a link binding and without `UNIAC_PROJECT_URL`, `uniac deploy` drops
 into that picker, which fails a non-interactive caller: with stdin at
 `/dev/null` it exits `70` on "no selection made", and with stdin an open pipe
-nobody writes to it blocks at the prompt. A host with no binding at all sets
+nobody writes to it blocks at the prompt. Where the account holds no projects
+there is nothing to pick and it exits `4` instead, naming
+`uniac project create`. A host with no binding at all sets
 `UNIAC_PROJECT_URL` instead, which names the deploy target on its own — but it
 carries no project name, and the project name is what the platform's read path
 is keyed on. While it is set, `uniac status` exits `3`, and `uniac deploy`

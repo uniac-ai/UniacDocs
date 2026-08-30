@@ -12,8 +12,8 @@ the platform's account of your services through the same
 invents that account — a run that failed before it reached the platform prints
 its failure and no service rows at all, though once **link** names a project
 the block's `project` row appears, read from the local binding. `init`,
-`plan`, `link`, and `auth` never speak that vocabulary: they exit `1` on
-error, `2` on a usage error; `version` always exits `0`.
+`plan`, `link`, `project`, and `auth` never speak that vocabulary: they exit
+`1` on error, `2` on a usage error; `version` always exits `0`.
 
 `plan` and `deploy` target a **deployment**: the named resource, else the
 manifest's `default`, else its only deployment. `plan`, `deploy`, and
@@ -67,6 +67,24 @@ into view. For the messages, see
 rules `plan` passes and `deploy` applies, see
 [what waits for deploy](/concepts/manifest#what-waits-for-deploy).
 
+## `uniac project create`
+
+```bash
+uniac project create <name>
+```
+
+Creates a [project](/concepts/model#project) on the account the session
+belongs to and prints its name and the slug the platform assigned:
+
+```text
+Created project my-app (my-app-e5f6g7h8).
+```
+
+It prompts for nothing, and it writes no link binding — pointing a directory
+at the new project is `uniac link <name>`. The name must match
+`^[a-z][a-z0-9-]{0,62}$`, checked before the CLI dials, so a malformed name
+fails offline; a name the account already carries is refused by the platform.
+
 ## `uniac link`
 
 ```bash
@@ -78,6 +96,15 @@ Binds the directory to a remote [project](/concepts/model#project), writing
 lists the projects on your account and prompts. The directory must already
 hold a `uniac.yaml` — that is checked before the session is — and you need a
 login session or `UNIAC_ACCESS_TOKEN`.
+
+It binds to a project that already exists and creates nothing. On an account
+with no projects it stops and names the command that does:
+
+```text
+Error: no projects on this account, so there is nothing to link
+create one with `uniac project create <name>`, then run `uniac link <name>`
+`uniac auth status` shows which account this session is signed in to
+```
 
 ## `uniac deploy`
 
@@ -91,7 +118,9 @@ Deploys to the linked project, in phases, fail-fast:
   before it asks for anything.
 - **link** — resolves the binding and your session. Without a
   `.uniac/deploy.json` binding or `UNIAC_PROJECT_URL`, drops into the
-  interactive project picker.
+  interactive project picker — or, on an account with no projects to pick
+  from, stops at [`4`](/cli/exit-codes) naming `uniac project create`. It
+  creates nothing either way.
 - **build** — obtains one container per service through your local Docker
   daemon, for `linux/amd64`. A service that declares
   [`image:`](/concepts/manifest#type-service-and-type-stateful) is pulled with
@@ -107,12 +136,23 @@ Deploys to the linked project, in phases, fail-fast:
   every two seconds for up to five minutes and reports what it settled as.
   Registration alone is not success.
 
-A reachable daemon is required whether you pull or build, and a daemon the CLI
-cannot reach fails the **build** phase. A build source that is not on disk
-never gets that far: a missing root, context, or Dockerfile is a manifest
-failure, raised in **plan**. What the Dockerfile itself gets wrong — a syntax
-error, a `target` stage that does not exist, a failing `RUN` — fails in
-**build**.
+A reachable daemon is required whether you pull or build. The CLI opens it at
+the start of **build**, before any image work, so an unreachable daemon fails
+there immediately and says what to do about it — the daemon's own error, then
+the install step for your operating system and the line to re-run:
+
+```text
+  ✗ build
+      docker daemon: Cannot connect to the Docker daemon at tcp://127.0.0.1:2375. Is the docker daemon running?
+      deploy pulls and builds images through the local Docker daemon, which is not reachable
+      start Docker Desktop, or install it: brew install --cask docker
+      re-run `uniac deploy` once the daemon is up
+```
+
+A build source that is not on disk never gets that far: a missing root,
+context, or Dockerfile is a manifest failure, raised in **plan**. What the
+Dockerfile itself gets wrong — a syntax error, a `target` stage that does not
+exist, a failing `RUN` — fails in **build**.
 
 Rejects a deployment instantiating more than one service — compose
 [one deployment per service](/concepts/model#deployment).
