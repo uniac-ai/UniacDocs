@@ -198,6 +198,7 @@ production platform — the login flow has its own variable, under
 |---|---|
 | `UNIAC_ACCESS_TOKEN` | Stands in for the browser login; read ahead of `~/.uniac/auth.json`. |
 | `UNIAC_PROJECT_URL` | Names the deploy target — full URL or bare slug — bypassing `.uniac/deploy.json` and the picker. |
+| `UNIAC_PLATFORM_URL` | Platform gateway origin for `auth login`, `project create`, and `link` (default `https://api.uniac.ai`). A linked directory carries its platform in the binding and needs no setting; a value contradicting the binding stops the run with exit `4`. |
 | `UNIAC_PROGRESS` | `1` forces progress narration on stderr, `0` silences it. Never affects stdout. |
 | `UNIAC_STORE_DIR` | Local artifact store location (default `~/.uniac/store`). |
 
