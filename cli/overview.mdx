@@ -92,10 +92,14 @@ uniac link [-C dir] [name|slug]
 ```
 
 Binds the directory to a remote [project](/concepts/model#project), writing
-`.uniac/deploy.json` (per-checkout state — gitignore it). With no argument,
-lists the projects on your account and prompts. The directory must already
-hold a `uniac.yaml` — that is checked before the session is — and you need a
-login session or `UNIAC_ACCESS_TOKEN`.
+`.uniac/deploy.json` (per-checkout state — gitignore it). The binding
+records the project's identity and its endpoints —
+`{project_slug, project_name, gateway_url, platform_url}`, as the platform
+reported them at link time — so commands in a linked directory follow the
+binding rather than ambient environment settings. With no argument, lists
+the projects on your account and prompts. The directory must already hold a
+`uniac.yaml` — that is checked before the session is — and you need a login
+session or `UNIAC_ACCESS_TOKEN`.
 
 It binds to a project that already exists and creates nothing. On an account
 with no projects it stops and names the command that does:
@@ -182,17 +186,19 @@ uniac auth <login|status|token|logout>
 
 | Subcommand | What it does |
 |---|---|
-| `login` | Browser sign-in; stores the session in `~/.uniac/auth.json` (mode 0600). |
-| `status` | Who is signed in, and until when. |
+| `login` | Browser sign-in; stores the session for the selected platform in `~/.uniac/auth.json` (mode 0600). One session per platform — signing in to one never disturbs another's. |
+| `status` | Who is signed in, per platform, and until when. |
 | `token` | Print the access token, for `UNIAC_ACCESS_TOKEN`. |
-| `logout` | Delete the stored session. |
+| `logout` | Delete every stored session. |
 
 `login` flags: `--no-browser` skips opening a browser — the login URL is
 printed either way; `--manual` skips the local callback server and prompts
 you to paste the redirected URL back, independently of `--no-browser`;
-`--host <host>` names the UniacWeb host serving the handoff (default
-`uniac.ai`, env `UNIAC_AUTH_HOST`); `--dev` is shorthand for
-`--host dev.uniac.ai`, and cannot be combined with `--host`.
+`--host <host>` names the UniacWeb host serving the handoff (env
+`UNIAC_AUTH_HOST`). The default platform signs in at `uniac.ai`; with
+`UNIAC_PLATFORM_URL` naming any other platform, the host must be given
+explicitly — the CLI never derives a sign-in host from a platform's name,
+and `login` stops naming both overrides instead.
 
 Only `login` parses flags. `uniac auth -h` prints the subcommand list and
 `uniac auth login -h` prints the flags above; `status`, `token`, and `logout`
