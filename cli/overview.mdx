@@ -23,7 +23,13 @@ manifest's `default`, else its only deployment. `plan`, `deploy`, and
 
 ```bash
 uniac init
+# equivalently, without installing anything first:
+npm create @uniac@latest
 ```
+
+`npm create @uniac@latest` runs `uniac init` — the `@uniac/create` package
+is that one forwarding, so both forms behave identically, arguments
+included.
 
 Asks for a service name — the default is the directory name lowercased, with
 every character outside `a-z0-9-_` replaced by `-` and leading and trailing
