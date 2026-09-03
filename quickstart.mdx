@@ -64,7 +64,10 @@ Tell the agent what should run, not which commands to run:
 Deploy this on Uniac: build the Dockerfile in this repo, listening on 8080, public over HTTP.
 ```
 
-The agent authors `uniac.yaml` — one file, the whole system description:
+The agent authors `uniac.yaml` — one file, the whole system description.
+(Without an agent, `npm create @uniac@latest` scaffolds a starting manifest
+in the current directory — it runs
+[`uniac init`](/cli/overview#uniac-init) — and you edit from there.)
 
 ```yaml uniac.yaml
 runtime: yaml
