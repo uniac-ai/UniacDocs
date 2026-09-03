@@ -15,14 +15,14 @@ Two commands, once per machine, whatever you go on to build. Your agent can
 run both itself — tell it to set this machine up for Uniac:
 
 ```bash
-npx skills add uniac-ai/agent-skills -g
+npx skills add uniac-ai/agent-skills -g -a <your-agent-id> -y
 npx -y @uniac/cli auth login
 ```
 
-The first installs the `uniac` agent skill globally, for every agent on the
-machine that reads `~/.agents/skills`: the model, the full manifest schema,
-the CLI's output and exit-code contracts, and how to compose several
-services. The agent works from the shipped contracts instead of guessing from
+The first installs the `uniac` agent skill globally for the agent you name
+(`claude-code`, for example — `-a` picks the agent, `-y` skips the prompts):
+the model, the full manifest schema, the CLI's output and exit-code
+contracts, and how to compose several services. The agent works from the shipped contracts instead of guessing from
 memory. Re-running the same command updates it.
 
 The second opens a browser — sign in or sign up, once — and stores the session
