@@ -197,8 +197,8 @@ uniac auth <login|status|token|logout>
 | `token` | Print the access token, for `UNIAC_ACCESS_TOKEN`. |
 | `logout` | Delete every stored session. |
 
-`login` flags: `--no-browser` skips opening a browser — the login URL is
-printed either way; `--manual` skips the local callback server and prompts
+`login` says whether it opened a browser and prints the login URL either
+way. Flags: `--no-browser` skips opening one; `--manual` skips the local callback server and prompts
 you to paste the redirected URL back, independently of `--no-browser`;
 `--host <host>` names the UniacWeb host serving the handoff (env
 `UNIAC_AUTH_HOST`). The default platform signs in at `uniac.ai`; with
@@ -206,10 +206,11 @@ you to paste the redirected URL back, independently of `--no-browser`;
 explicitly — the CLI never derives a sign-in host from a platform's name,
 and `login` stops naming both overrides instead.
 
-Only `login` parses flags. `uniac auth -h` prints the subcommand list and
-`uniac auth login -h` prints the flags above; `status`, `token`, and `logout`
-ignore every argument they are given — `uniac auth logout -h` does not print
-help, it logs you out. Only `login` touches the network.
+`uniac auth -h` prints the subcommand list and every subcommand's `-h`
+prints its own usage without doing anything; `status`, `token`, and
+`logout` take no flags or arguments, and anything else on their line is a
+usage error (exit 2) that also does nothing. Only `login` touches the
+network.
 
 ## `uniac version`
 
