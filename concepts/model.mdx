@@ -106,9 +106,11 @@ whole-project `uniac status` lists each with its size and its own lifecycle
 state — including whether a service is holding it.
 
 What is running is not the manifest: deleting a resource from `uniac.yaml`
-does not remove the service, and the CLI has no removal command — retire
-services from the dashboard at [uniac.ai](https://uniac.ai), which also
-covers scaling replicas and deleting projects.
+does not remove the service, and the CLI has no removal command. Removal is
+done in the dashboard at [uniac.ai](https://uniac.ai): open the project, then
+either open a service and choose **Delete service**, or open the project's
+Settings and choose **Delete project** — it asks you to type the project's
+name, and removes every service and endpoint the project holds.
 
 ## The loop
 
