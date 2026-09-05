@@ -102,10 +102,13 @@ Binds the directory to a remote [project](/concepts/model#project), writing
 `.uniac/deploy.json` (per-checkout state — gitignore it). The binding
 records the project's identity and its endpoints —
 `{project_slug, project_name, gateway_url, platform_url}`, as the platform
-reported them at link time; `gateway_url` is the project's gateway, the
-endpoint the CLI pushes images to and registers services with — so commands
-in a linked directory follow the binding rather than ambient environment
-settings. With no argument, lists
+reported them at link time — so commands in a linked directory follow the
+binding rather than ambient environment settings. `project_name` is the name
+given at `project create`, unique within the account; `project_slug` is the
+identifier the platform assigned the project, and the label of its gateway
+host; `gateway_url` is the project's gateway, the endpoint the CLI pushes
+images to and registers services with; `platform_url` is the platform API
+origin the project belongs to (`https://api.uniac.ai` by default). With no argument, lists
 the projects on your account and prompts. The directory must already hold a
 `uniac.yaml` — checked before authentication.
 
