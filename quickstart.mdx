@@ -10,10 +10,10 @@ your image from a `Dockerfile` in your tree or pull a prebuilt one you name.
 
 ## 1. Set up this machine
 
-Machine setup installs the skill for your coding agent, installs the CLI,
+Machine setup installs the skills for your coding agent, installs the CLI,
 and connects it to your account.
 
-Install the `uniac` skill globally for your agent:
+Install Uniac's skills globally for your agent:
 
 <Tabs>
   <Tab title="Claude Code">
@@ -33,8 +33,12 @@ Install the `uniac` skill globally for your agent:
   </Tab>
 </Tabs>
 
-The skill contains Uniac's system model, manifest schema, CLI contracts,
-and platform behavior. Re-running your agent's command updates it.
+| Installed skill | Purpose |
+|---|---|
+| [`uniac`](https://github.com/uniac-ai/agent-skills/blob/main/skills/uniac/SKILL.md) | System model, manifest schema, CLI contracts, and platform behavior. |
+| [`uniac-quickstart`](https://github.com/uniac-ai/agent-skills/blob/main/skills/uniac-quickstart/SKILL.md) | A complete example of a first deployment. |
+
+Re-running your agent's command updates both skills.
 For another integration, the installer's
 [supported-agents table](https://github.com/vercel-labs/skills/blob/v1.5.15/README.md#supported-agents)
 provides its `-a` value.
