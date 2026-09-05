@@ -11,21 +11,42 @@ pulls a prebuilt one you name.
 
 ## 1. Set up this machine
 
-Two commands, once per machine, whatever you go on to build. Your agent can
-run both itself — tell it to set this machine up for Uniac:
+Machine setup installs the skill for your coding agent and connects the CLI
+to your account. Your agent can run these commands.
+
+Install the `uniac` skill globally for your agent:
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    npx -y skills@1.5.15 add uniac-ai/agent-skills -g -a claude-code -y
+    ```
+  </Tab>
+  <Tab title="Codex">
+    ```bash
+    npx -y skills@1.5.15 add uniac-ai/agent-skills -g -a codex -y
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    ```bash
+    npx -y skills@1.5.15 add uniac-ai/agent-skills -g -a cursor -y
+    ```
+  </Tab>
+</Tabs>
+
+The skill contains Uniac's system model, manifest schema, CLI contracts,
+and platform behavior. Re-running your agent's command updates it.
+For another integration, the installer's
+[supported-agents table](https://github.com/vercel-labs/skills/blob/v1.5.15/README.md#supported-agents)
+provides its `-a` value.
+
+Connect the CLI to your account:
 
 ```bash
-npx skills add uniac-ai/agent-skills -g -a <your-agent-id> -y
 npx -y @uniac/cli auth login
 ```
 
-The first installs the `uniac` agent skill globally for the agent you name
-(`claude-code`, for example — `-a` picks the agent, `-y` skips the prompts):
-the model, the full manifest schema, the CLI's output and exit-code
-contracts, and how to compose several services. The agent works from the shipped contracts instead of guessing from
-memory. Re-running the same command updates it.
-
-The second opens a browser — sign in or sign up, once — and stores the session
+This opens a browser — sign in or sign up, once — and stores the session
 in `~/.uniac/auth.json`; every command that reaches the platform (`deploy`,
 `status`, `link`, `project`) uses it. On a machine with no browser of its own,
 `uniac auth login --manual` prints the handoff URL, you complete the login in
