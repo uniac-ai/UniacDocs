@@ -19,7 +19,7 @@ some future dependency can never be mistaken for a meaning `deploy` or
 |---|---|---|---|
 | 0 | — | Success. | Read the state block. |
 | 2 | `usage` | Malformed invocation. Nothing was sent anywhere, and nothing reaches stdout: the flag error and the command's usage go to stderr. The code itself is reserved — part of the vocabulary, emitted by nothing. | Fix the arguments. |
-| 3 | `auth` | Missing credential — none on disk for the platform the run addresses, none in the environment, or the stored session has expired. A credential the platform *rejects* lands elsewhere; see the disagreements below. | `uniac auth login`, or set `UNIAC_ACCESS_TOKEN`. |
+| 3 | `auth` | No usable credential for the platform the run addresses. A credential the platform *rejects* lands elsewhere; see the disagreements below. | See [authentication](/cli/overview#uniac-auth) for credential selection and expiry. |
 | 4 | `not_linked` | `deploy` reached its **link** phase and the account has no projects, so there is nothing to bind to (nothing was created) — or, from `deploy` and `status` both, the directory's binding and an explicit `UNIAC_PLATFORM_URL` name different platforms, refused before anything goes on the wire. | `uniac project create <name>` for the empty account; unset `UNIAC_PLATFORM_URL` or re-run `uniac link` for the platform disagreement. |
 | 5 | `manifest` | `uniac.yaml` is missing from the project directory, or does not describe a valid system. | Add or fix the manifest; `uniac plan` reproduces most of these offline. |
 | 6 | `build` | Failed obtaining a container — a pull, a Dockerfile build, or reaching the local Docker daemon. | Read the build board in the frame; check that the daemon is running. |

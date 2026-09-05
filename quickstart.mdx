@@ -3,16 +3,15 @@ title: "Quickstart"
 description: "Set up an agent to deploy on Uniac."
 ---
 
-By the end, a coding agent — Claude Code, Codex, or anything that reads
-`~/.agents/skills` — can take your application from "deploy this" to a running
-service, and you can verify everything it did. You need Node 18+ and a running
-Docker daemon: Docker builds your image from a `Dockerfile` in your tree, or
-pulls a prebuilt one you name.
+By the end, your coding agent can take your application from "deploy this"
+to a running service, and you can verify everything it did. Machine setup
+requires Node 18+. Deployment also requires a running Docker daemon to build
+your image from a `Dockerfile` in your tree or pull a prebuilt one you name.
 
 ## 1. Set up this machine
 
-Machine setup installs the skill for your coding agent and connects the CLI
-to your account. Your agent can run these commands.
+Machine setup installs the skill for your coding agent, installs the CLI,
+and connects it to your account.
 
 Install the `uniac` skill globally for your agent:
 
@@ -40,24 +39,21 @@ For another integration, the installer's
 [supported-agents table](https://github.com/vercel-labs/skills/blob/v1.5.15/README.md#supported-agents)
 provides its `-a` value.
 
-Connect the CLI to your account:
+Install the CLI and connect it to your account:
 
 ```bash
-npx -y @uniac/cli auth login
+npm install -g @uniac/cli
+uniac auth login
 ```
 
-This opens a browser — sign in or sign up, once — and stores the session
-in `~/.uniac/auth.json`; every command that reaches the platform (`deploy`,
-`status`, `link`, `project`) uses it. On a machine with no browser of its own,
-`uniac auth login --manual` prints the handoff URL, you complete the login in
-a browser anywhere, and paste the redirected URL back — see
-[`uniac auth`](/cli/overview#uniac-auth). For CI and other unattended hosts,
-see [Headless environments](#headless-environments) below.
+Login uses the browser for sign-in or account creation. Token lifetime and
+unattended access are covered under [`uniac auth`](/cli/overview#uniac-auth).
 
-Nothing project-scoped exists yet: no manifest, no project, no binding. Those
-arrive in step 2, at first contact with a project. `npx -y @uniac/cli` runs
-the CLI without installing it; `npm i -g @uniac/cli` puts `uniac` on your
-PATH if you would rather have it there.
+The installed CLI reports its version with:
+
+```bash
+uniac version
+```
 
 ## 2. Create a project
 
@@ -154,10 +150,6 @@ a `hold` or `warning` row is a condition worth reading — the whole row set is 
 the [run output](/cli/output). Everything the agent did is re-readable: the
 platform's account, not the agent's.
 
-Step 1 does not repeat. In the next directory you open, the agent already
-holds the contracts and the session: ask it for something running and it
-starts at step 2.
-
 Prefer to drive the commands yourself? They are all in the
 [CLI reference](/cli/overview).
 
@@ -186,15 +178,10 @@ Prefer to drive the commands yourself? They are all in the
 
 ## Headless environments
 
-For CI and other unattended hosts, skip `uniac auth login` and set
-`UNIAC_ACCESS_TOKEN` instead:
+Authentication for CI and other unattended hosts is covered under
+[`uniac auth`](/cli/overview#uniac-auth).
 
-```bash
-export UNIAC_ACCESS_TOKEN="…"    # from `uniac auth token` on a logged-in machine
-```
-
-`uniac link` does not need the browser either: an argument that is a slug, or
-a name only one project carries, links straight through without prompting.
+`uniac link` with a slug, or a name only one project carries, links without prompting.
 Bare `uniac link`, or a name more than one project carries, opens the picker
 instead — which an unattended caller cannot answer. Link the directory: the
 binding is where `uniac status` gets the project name in step 4.
@@ -214,15 +201,12 @@ Prefer the binding wherever the host can hold one. Docker must be available on
 the runner — `uniac deploy` needs it whether the service's image is pulled or
 built.
 
-What an unattended host sets for a deploy-and-verify run against the
-production platform — the login flow has its own variable, under
-[`uniac auth`](/cli/overview#uniac-auth):
+Deployment settings for unattended hosts:
 
 | Variable | Effect |
 |---|---|
-| `UNIAC_ACCESS_TOKEN` | Stands in for the browser login; read ahead of `~/.uniac/auth.json`. |
 | `UNIAC_PROJECT_URL` | Names the deploy target — full URL or bare slug — bypassing `.uniac/deploy.json` and the picker. |
-| `UNIAC_PLATFORM_URL` | Platform gateway origin for `auth login`, `project create`, and `link` (default `https://api.uniac.ai`). A linked directory carries its platform in the binding and needs no setting; a value contradicting the binding stops the run with exit `4`. |
+| `UNIAC_PLATFORM_URL` | Platform gateway origin for `project create` and `link` (default `https://api.uniac.ai`). A linked directory carries its platform in the binding and needs no setting; a value contradicting the binding stops the run with exit `4`. |
 | `UNIAC_PROGRESS` | `1` forces progress narration on stderr, `0` silences it. Never affects stdout. |
 | `UNIAC_STORE_DIR` | Local artifact store location (default `~/.uniac/store`). |
 

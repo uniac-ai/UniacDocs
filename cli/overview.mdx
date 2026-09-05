@@ -4,6 +4,7 @@ description: "Every command, its flags, and its behavior."
 ---
 
 A single Go binary, installed with `npm i -g @uniac/cli` (Node 18 or newer).
+`npx -y @uniac/cli` runs it without a global installation.
 
 `deploy` and `status` both report platform state: each prints
 the platform's account of your services through the same
@@ -104,8 +105,7 @@ records the project's identity and its endpoints —
 reported them at link time — so commands in a linked directory follow the
 binding rather than ambient environment settings. With no argument, lists
 the projects on your account and prompts. The directory must already hold a
-`uniac.yaml` — that is checked before the session is — and you need a login
-session or `UNIAC_ACCESS_TOKEN`.
+`uniac.yaml` — checked before authentication.
 
 It binds to a project that already exists and creates nothing. On an account
 with no projects it stops and names the command that does:
@@ -192,10 +192,20 @@ uniac auth <login|status|token|logout>
 
 | Subcommand | What it does |
 |---|---|
-| `login` | Browser sign-in; stores the session for the selected platform in `~/.uniac/auth.json` (mode 0600). One session per platform — signing in to one never disturbs another's. |
-| `status` | Who is signed in, per platform, and until when. |
-| `token` | Print the access token, for `UNIAC_ACCESS_TOKEN`. |
+| `login` | Obtain an access token through browser sign-in and create or replace the selected platform's stored session. Account creation is available during sign-in. |
+| `status` | Print stored identities and expiry times for every platform, including expired sessions. Ignores `UNIAC_ACCESS_TOKEN` and does not validate credentials with the server. |
+| `token` | Print the access token selected by the rules below; exits `1` when none is usable. |
 | `logout` | Delete every stored session. |
+
+Sessions are stored in `~/.uniac/auth.json` (mode 0600), one per platform.
+Signing in to one platform preserves the sessions for others.
+`UNIAC_PLATFORM_URL` selects the platform for `login` and `token`
+(default `https://api.uniac.ai`).
+
+Platform commands and `auth token` use a nonempty `UNIAC_ACCESS_TOKEN` first,
+otherwise the stored token for the platform they address. The environment
+override has no local expiry check. A stored token becomes unusable 60 seconds
+before its recorded expiry. The CLI does not refresh tokens automatically.
 
 `login` says whether it opened a browser and prints the login URL either
 way. Flags: `--no-browser` skips opening one; `--manual` skips the local callback server and prompts
