@@ -44,14 +44,7 @@
           {
             "group": "Resources",
             "pages": [
-              {
-                "group": "Service",
-                "root": "resources/service/overview",
-                "pages": [
-                  "resources/service/networking",
-                  "resources/service/environment"
-                ]
-              },
+              "resources/service",
               "resources/volume"
             ]
           },
