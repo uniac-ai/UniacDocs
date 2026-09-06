@@ -5,3 +5,9 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Maintainer tooling and source provenance
+tools/
+docs-source.json
+AGENTS.md
+CLAUDE.md

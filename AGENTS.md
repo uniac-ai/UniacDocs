@@ -1,37 +1,32 @@
-# Writing for UniacDocs
+# UniacDocs publication
 
-User-facing documentation for [Uniac](https://uniac.ai), a cloud deployment platform. Built on [Mintlify](https://mintlify.com).
+The [public agent repository](https://github.com/uniac-ai/agent-skills) owns
+the authored documentation. This repository publishes generated Mintlify
+pages; `docs-source.json` identifies their source commit.
 
-## Workflow
+## Ownership
 
-- Pages are `.mdx`. Site config is `docs.json`.
-- `mint dev` — preview at `http://localhost:3000`.
-- `mint broken-links` — check links before pushing.
-- Pushes to the default branch auto-deploy via the Mintlify GitHub app.
+- Change product facts, examples, headings, and links in the public repository.
+- Change the website navigation and theme in `docs.json`; its groups provide
+  website navigation independently of the authored documents' links.
+- Change the visual skin in `custom.css`, with assets in `logo/` and `images/`.
+- Every `.mdx` page is generated. The public repository's `tools/export_docs.py`
+  owns route mapping and conversion; `tools/sync_docs.py` selects its source.
 
-For Mintlify components and config reference, install the Mintlify skill: `npx skills add https://mintlify.com/docs`.
+The public setup guide becomes `/setup`, quickstart becomes `/quickstart`,
+and the top-level system overview in `references/overview.md` becomes `/`. Other
+references keep their source-relative paths. The sidebar starts with that
+overview, then Composition, Resources, and Uniac CLI; Guides are separate.
+The exporter derives frontmatter, preserves code, and converts documentation
+links to website routes. Links to the installable skill itself stay external.
 
-## Scope
+## Verification and publication
 
-Document the released surface, nothing else. If a behavior isn't in the shipped CLI or its schema, it doesn't appear here — not as "coming soon," and not because an internal note describes it. Verify against the released binary; internal platform architecture lives in UniacInfra.
+Use the commands in [README.md](README.md) to regenerate and check pages.
+Local source previews leave the published commit pin unchanged. Before
+submitting the website update, pin the public commit and run the default
+source check, `mint broken-links`, and `mint validate`.
 
-The primary audience is agent-driven development: an agent (or the engineer directing one) authoring `uniac.yaml` and driving the CLI. Lead with contracts an agent can act on — offline verification, digests, exit codes, output shape.
-
-## Style
-
-- Minimal page set. Prefer extending an existing page over adding one; a new page must own a concern no current page owns. Example outputs are pasted from real runs, never composed.
-- Active voice, second person.
-- Sentence case for headings.
-- Bold for UI elements: Click **Settings**.
-- Code formatting for commands, paths, file names, code references.
-- Apply Uniac's information-cleanness principles: every sentence earns its keep; no derived info; no example lists where each item reduces to the same point; no cross-references that don't pay rent.
-
-## Look
-
-Neo-brutalist: flat surfaces, hard borders, offset shadows, no gradients, no rounded corners. The skin lives in `custom.css` (Mintlify applies every `.css` file in the repo); type and palette live in `docs.json`.
-
-## Canonical names
-
-Manifest: `uniac.yaml`. Auth file: `~/.uniac/auth.json`. Link binding: `.uniac/deploy.json`. Resource types: `service`, `stateful`, `deployment`. There is no SDK: the CLI (`init`, `plan`, `project`, `link`, `deploy`, `status`, `auth`, `version`) is the whole client surface. Public agent knowledge ships as the `uniac` skill from `uniac-ai/agent-skills`; installation is defined in [the public setup instructions](https://uniac.ai/agents.md). A service names exactly one source — `image:` for a prebuilt OCI reference, or `build:` for a Dockerfile build of the user's own tree. Durable storage is `volumes:` on a `type: stateful` service. See Concepts and CLI reference for definitions.
-
-Verify CLI claims against the released binary before documenting them. `uniac plan` and every error in the manifest page reproduce offline, with no credentials and no Docker.
+CI verifies every page against the pinned source. Pushes to the default branch
+auto-deploy through the Mintlify GitHub app. Changes use a worktree and PR;
+the Uniac engineering skills own that workflow.
