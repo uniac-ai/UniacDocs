@@ -1,201 +1,145 @@
 ---
-title: "Run output"
-description: "What deploy and status print, and where."
+title: "Output and errors"
+description: "deploy prints one final text report to stdout, containing its execution record followed by the state it could report. status prints the state and, if its read fails, an error block. Neither command has a JSON mode. Help and argument-parsing errors go to stderr and leave stdout empty."
 ---
 
-Once past flag parsing, `uniac deploy` prints exactly one thing on stdout:
-the frame the finished run leaves behind. It holds two registers — the **run
-record**, what the run did, then the **state block**, what it established —
-separated by a blank line, the state block at the margin because it is the
-answer rather than a step.
+{/* Generated from uniac-ai/agent-skills: skills/uniac/references/cli/output.md */}
 
-`uniac status` prints the state block alone — and an error block beneath it
-when the read fails. Both on stdout; the reporting path writes nothing to
-stderr. Either command does write there when it never gets past flag
-parsing — `-h`, or a malformed invocation — printing the usage block on
-stderr and nothing at all on stdout (see [Exit codes](/cli/exit-codes)).
+## Channels and formats
 
-Live progress belongs to `deploy` and goes to **stderr**, and only when
-stderr is a terminal with real width. The live area erases itself when the
-run ends, so stdout is a function of the run alone — identical bytes whether
-or not anyone watched. `UNIAC_PROGRESS=1` streams plain progress lines to
-stderr instead (the CI form), `UNIAC_PROGRESS=0` silences it; neither touches
-stdout, and neither affects `uniac status`, which narrates nothing.
+`deploy` prints one final text report to stdout, containing its execution
+record followed by the state it could report. `status` prints the state and,
+if its read fails, an error block. Neither command has a JSON mode. Help and
+argument-parsing errors go to stderr and leave stdout empty.
 
-## The run record
+Deployment progress uses stderr. By default, a terminal with usable width
+gets a live display that clears when the run ends. `UNIAC_PROGRESS=1` streams
+plain progress lines; `UNIAC_PROGRESS=0` disables progress. These settings do
+not change stdout. `status` has no progress display.
 
-The record is the run's task tree: the root line `deploy <target>` at the
-margin, then one line per stage beneath it, indented two spaces, in the
-order the run takes them — `plan` summarized by the deployable digest,
-`link` by the project slug, `build` by `<N> image(s)`, then `push <service>`
-by the image digest and `deploy <service>` by the settled status.
+`link` writes its listing, prompt and confirmation to stderr, including when
+deployment opens the picker. Other commands write results to stdout and
+errors to stderr. A failure to render a status report can also write stderr.
 
-Both digests are shortened to `sha256:` plus twelve hex characters; the
-settled status is the platform's own word for what the service ended as. The
-glyphs are `✓` done and `✗` failed. Ctrl-C fails the stage that was in
-flight — `✗`, with the interruption as the last line of its evidence — and
-the run exits under that stage's own code.
+## Plan output
 
-The root line always carries a duration; a stage carries one only when it
-took a second or more. Durations render as `480ms`, `41.0s`, `2m03s`. A
-clean run stays one level deep: the build's own steps live in the live view,
-not in the record. The frames under [Failures](#failures) show the record as
-it renders.
+The text preview names the selected deployment and the digest of its generated
+description, then shows image work under `Building` and named services under
+`Deploying`. Service rows include sources, declared public exposure and
+volumes. `--full` adds environment values, the start command and the source
+definition's name when it differs from the service name.
 
-## The state block
+`plan --json` emits `{resource, digest, deployable}`. `resource` names the
+selected declaration; `deployable` is the generated service description.
+Environment and start-command fields are included whether or not `--full`
+is supplied. [Resources](/resources/overview) defines the generated
+description and what its digest identifies.
 
-The state block is the platform's account of the project — the same view the
-dashboard shows, and the same rendering both commands print. An omitted line
-is an absent fact, never a hidden one, and the quiet normal says nothing: an
-`active` lifecycle, no task in flight, and replicas as requested add no rows.
+## Deployment record
 
-```text
-project  my-app-e5f6g7h8
+The root line names the selected deployment. Its children report `plan`,
+`link`, `build`, `push <service>` and `deploy <service>`. They include the
+digest of the generated description, project slug, image count, pushed image digest
+and observed status when available. Displayed digests are shortened; the
+state section contains no image reference or digest.
 
-service      api  v4
-  status     running (2/2)
-  kind       stateless
-  lifecycle  preparing
-  deploying  running: Provision instances
-  endpoint   http  https://khjngx7iqpu03qux.svc.uniac.ai → :8080
-  warning    ${{db.host}} dangling — 'db' is not resolvable in this environment
+`✓` marks completion and `✗` marks failure. On failure, the root line carries
+an error code and the failed stage includes its retained progress and error
+message. A deployment report has no separate `error` block. An interruption
+is classified under the stage in flight, and a nonzero exit can still leave
+a report and project or service rows.
 
-service     db  v2
-  status    suspended (0/0)
-  kind      stateful
-  replicas  1 requested
-  endpoint  tcp  ep1.tcp.uniac.ai:20001 → :5432
-  volume    db.data at /var/lib/postgresql/data
-  hold      billing_past_due
+## State rows
 
-volume   db.data
-  size   10GB
-  state  attached to db
+Service state is explained in
+[Service observation](/resources/service/overview#observed-state), public
+addresses in [Networking](/resources/service/networking), and durable
+storage state in [Volume lifecycle](/resources/volume#lifecycle).
 
-volume   old.data
-  size   5GB
-  state  unattached (no service holds it; data intact)
-```
-
-Services appear in name order. Columns align within a block, not across the
-page — read a line by its label, never by a column offset.
-
-| Line | Meaning |
+| Row | Representation |
 |---|---|
-| `project` | The linked project's name; `deploy` falls back to its slug. |
-| `platform` | The platform gateway origin the account came from. Absent on the production platform — the quiet normal says nothing. |
-| `service <name>  v<N>` | Starts one block per service. `v<N>` numbers the serving deployment — "which state is this service in" — and is absent until one exists. |
-| `status` | The platform's word for what the service is doing, with observed over effective replicas when the platform reports an observation: `running (2/2)`. |
-| `kind` | The platform's own word for how it runs the instances: `stateful` for [one capped at a single instance](/concepts/manifest#type-service-and-type-stateful), `stateless` otherwise. Absent when the platform reports no kind at all, which reads as stateless. |
-| `lifecycle` | The serving deployment's phase — `preparing`, `retiring`, `retired`. Absent while it is `active`. |
-| `deploying` | The deployment task in flight: its state, and the step it is on when that says more. Absent when nothing is running. |
-| `replicas` | `<N> requested`, said only when the request differs from what the platform settled on — when the platform reports an observation, the effective count is already the denominator in `status`. |
-| `endpoint` | `<type>  <address> → :<port>`: the ingress kind, the whole string a client dials, then your own listen port the traffic lands on. The type prefix and the `→ :<port>` tail each appear only when the platform reports that half, so a bare `<address>` is a whole line. A `tcp` address already carries its allocated edge port; the number after `→ :` is the port inside the container, never one to dial. |
-| `volume` | `<name> at <mount path>`: which durable volume this service holds, and where it mounts. Size and lifecycle belong to the entity block below. |
-| `hold` | A platform-side reason the service is not converging, named as a code rather than prose. A service under a hold is not running, and its `status` says so. |
-| `warning` | A condition the run succeeded despite. Whatever the platform reports passes through unchanged — the unresolvable [reference](/concepts/manifest#cross-deployment-references) in the block above is one. Two more are the CLI's own: ``state unread — the platform read path did not answer; run `uniac status` ``, when the run deployed the service but could not read what it ended as — the block is then that service's name and its warnings, every other row absent for want of a read rather than for quiet; and `release record not written: <error>`, when the local note of the release fails to write, which lands on every service the run deployed and leaves the deployment itself standing. |
+| `project` | The linked project's name; deployment falls back to its slug. |
+| `platform` | The platform API origin, shown only when it differs from production. |
+| `service` | A service name, followed by `v<N>` when a serving version was read. |
+| `status` | Reported status, with `(observed/effective)` when replica observation is available. |
+| `kind` | Reported service kind, omitted when unavailable. |
+| `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
+| `deploying` | The in-flight task state and its current step when reported. |
+| `replicas` | `<N> requested`, shown when the requested and effective counts differ. |
+| `endpoint` | `<type> <address> → :<container-port>`; type and container port are omitted when unavailable. |
+| Indented `volume` | `<name> at <mount-path>` on a service. |
+| `hold` | A platform hold code. |
+| `warning` | A platform warning or a CLI observation/recording warning. |
 
-### Volume entities
+The endpoint address is the complete address a client uses. A TCP address
+includes its allocated public port; the number after `→` is the container
+port. Columns align within each block, so their character offsets vary.
 
-After the services come the project's durable volumes, one block each. An
-indented `volume` row is a mount on a service; a `volume` row at the margin
-opens an entity, whose own facts are its size and its lifecycle state:
+Whole-project `status` lists services in name order and adds project volume
+blocks after them. Each volume block has its name, `size` in GB and `state`,
+including the holding service when available. `deploy` and single-service
+`status` show service mounts but do not list volume entities, so they cannot
+show retained unattached volumes.
 
-| Line | Meaning |
-|---|---|
-| `volume <name>` | The project-scoped entity name, [`<instance>.<local>`](/concepts/manifest#volumes). |
-| `size` | Provisioned size, in GB. |
-| `state` | `attached to <service>` — a bare `attached` when the platform names no holder — `unattached (no service holds it; data intact)`, or the platform's own word for a disk in motion: `provisioning`, `attaching`, `detaching`, `deleting`. |
+### Partial observations and warnings
 
-Only the whole-project `uniac status` lists the entities. `uniac deploy` and
-`uniac status <service>` carry the mount row on the service and nothing else,
-so an unattached volume — data intact, held by nobody — appears nowhere but
-here. A platform that does not serve the volume read costs this section and
-nothing else: the status still renders, and still exits on its own verdict.
+A failed service-detail read during whole-project `status` leaves that
+service's name and summary status but omits its additional details. A failed
+volume read omits the volume section. Either can occur with exit 0. Missing
+rows therefore do not establish that the corresponding remote facts are
+absent.
 
-## Failures
+When deployment otherwise succeeds but cannot read a service's final state,
+it reports `state unread` as a warning. A failed local release-record write produces
+`release record not written: <error>`; the remote deployment remains in place.
+These warnings do not make the command fail. A name-only service row can also
+appear after registration fails and does not establish a running service.
 
-`uniac status` has no task tree, so it says what went wrong in an `error`
-block, after whatever state it did establish and a blank line — when the read
-established nothing, that blank line is the run's first byte:
+Platform warnings are passed through, including unresolved
+[environment references](/resources/service/environment).
 
-```text
+## Errors and exit codes
 
-error      auth
-  message  no access token found. Run `uniac auth login` or set UNIAC_ACCESS_TOKEN
-```
+A `status` error block contains `error <code>`, a human-readable `message`
+and `retryable yes` when reported. Deployment puts the code on the root line
+and annotates a retryable failure there. `retryable` means the same operation
+may succeed without changes; error messages are explanatory prose.
 
-| Line | Meaning |
-|---|---|
-| `error` | A code from the closed set in [Exit codes](/cli/exit-codes). Branch on it — never on the message, which is prose for people. |
-| `message` | What happened, for people. A message that spans lines — a transport error quoting an HTTP body — keeps its continuation lines under the `message` column. |
-| `retryable` | `yes` when re-running the identical command could succeed with nothing else changed. Prefer this judgment to your own heuristics. |
+The following exit codes apply to `deploy` and `status`:
 
-```text
-project  my-app-e5f6g7h8
+| Exit | Code | Condition |
+|---|---|---|
+| 0 | — | The command succeeded. |
+| 2 | `usage` | Invalid invocation; no deployment attempted and no code printed on stdout. |
+| 3 | `auth` | No locally usable credential, or `status` has no project name. |
+| 4 | `not_linked` | Binding/platform conflict, or deployment's picker found no projects. |
+| 5 | `manifest` | Description validation or deployment-shape failure. |
+| 6 | `build` | Docker daemon, image-pull or build failure. |
+| 7 | `push` | Image upload failure. |
+| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry or a refused platform read. |
+| 9 | `unreachable` | A platform request was classified as unreachable. |
+| 10 | `pending` | Reserved; currently not emitted. |
+| 70 | `internal` | Unclassified failure. |
 
-error        unreachable
-  message    read project my-app-e5f6g7h8: GET /api/projects/my-app-e5f6g7h8 returned 530: origin is unreachable
-             error code: 1016
-             ray id: 8f3c2a91
-  retryable  yes
-```
+Exit 1 is unassigned for these two commands. Some conditions use a code whose
+name does not describe the whole cause:
 
-`uniac deploy` says both of those things in the frame instead: the code
-annotates the root line, and the message closes the evidence inset beneath
-the task that broke. **A deploy frame has no `error` block** — the root-line
-code and the exit status are what a consumer branches on.
+- `status` without a binding or target override exits 70 when a credential is
+  available; without a usable credential it exits 3. A target with no project
+  name, including `UNIAC_PROJECT_URL`, exits 3.
+- Deployment's project picker can report transport, rejected-credential or
+  unanswered-input failures as 70. No projects produces 4.
+- Missing build directories or Dockerfiles produce 5 during planning;
+  Dockerfile or daemon failures during image work produce 6.
+- A rejected platform credential can produce 7 during upload, 8 during a
+  deployment request or status read, or 70 during project selection.
+- A deployment observation deadline produces 8 while the accepted work
+  continues. After a successful first task read, later task-read failures
+  also produce 8, including transport failures.
+- Status reads and deployment push/request operations classify transport
+  errors and HTTP 502, 503, 504, 521, 522, 523 and 530 as unreachable (9).
+  Other refused status reads, including 401 and 403, produce 8.
 
-```text
-✗ deploy main  auth  (0ms)
-  ✓ plan  sha256:e6feea2c0f8d
-  ✗ link
-      resolving deploy target
-      no access token found. Run `uniac auth login` or set UNIAC_ACCESS_TOKEN
-```
-
-Only the path to the failure expands; finished siblings stay one-liners.
-Evidence is what the broken task retained — the progress lines it kept, then
-the error — so the message closes the block rather than being all of it, and
-a task that narrated several steps insets those too. The run above reached
-nothing, so it established no state and none is invented for it: the frame
-is the record alone. A failure that lands before the manifest names a
-deployment leaves the label bare, too: `✗ deploy  manifest  (0ms)`.
-
-Where the evidence can name the next command, it does. A deploy on an
-account that holds no projects stops in the same `link` task under
-`not_linked`, and the inset is the remediation:
-
-```text
-✗ deploy main  not_linked  (2ms)
-  ✓ plan  sha256:788cc3d57301
-  ✗ link
-      linking project
-      no projects on this account, so there is nothing to link
-      create one with `uniac project create <name>`, then run `uniac link <name>`
-      `uniac auth status` shows which account this session is signed in to
-```
-
-When the build is what broke, the board it was drawing stands in for that
-narration — one line per container, `pull <ref>` or `build ./<root>` (just
-`build .` when the root is the project directory), with a step's latest
-status inset beneath it when it has said one — and the build's own error
-still closes the block. Linking had already succeeded here, so the run does
-have state to report:
-
-```text
-✗ deploy main  build  (624ms)
-  ✓ plan  sha256:fc0252a4b82f
-  ✓ link  my-app-e5f6g7h8
-  ✗ build
-      ✗ pull ghcr.io/uniac-ai/does-not-exist:1.0  (623ms)
-      image-pull[{"Platform":"linux/amd64","Ref":"ghcr.io/uniac-ai/does-not-exist:1.0"}]: pull ghcr.io/uniac-ai/does-not-exist:1.0: Error response from daemon: error from registry: denied
-      denied
-
-project  my-app-e5f6g7h8
-```
-
-A retryable failure annotates the root as `<code> — retryable`:
-`✗ deploy main  push — retryable  (136ms)`. A failed run always leaves its
-frame and whatever state it did establish, so never read a non-zero exit as
-"no output" — only the `2` a malformed invocation earns prints none.
+Other commands use 0 for success, 1 for command failure and 2 for invalid
+invocation. A description failure produces 1 under `plan` and 5 under
+`deploy`. Bare or unknown invocations exit 2; help and `version` exit 0.

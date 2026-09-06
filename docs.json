@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Uniac",
-  "description": "Describe a system in one file; the platform runs it.",
+  "description": "Uniac concepts, resources, and CLI documentation.",
   "colors": {
     "primary": "#0A0A0A",
     "light": "#FAFAFA",
@@ -30,42 +30,42 @@
   },
   "favicon": "/favicon.png",
   "navigation": {
-    "tabs": [
+    "groups": [
       {
-        "tab": "Documentation",
-        "groups": [
+        "group": "Uniac",
+        "pages": [
+          "index",
+          "project",
           {
-            "group": "Get started",
+            "group": "Resources",
+            "root": "resources/overview",
             "pages": [
-              "index",
-              "quickstart"
+              {
+                "group": "Service",
+                "root": "resources/service/overview",
+                "pages": [
+                  "resources/service/networking",
+                  "resources/service/environment"
+                ]
+              },
+              "resources/volume"
             ]
           },
           {
-            "group": "Concepts",
+            "group": "Uniac CLI",
+            "root": "cli/overview",
             "pages": [
-              "concepts/model",
-              "concepts/manifest"
+              "cli/authentication",
+              "cli/output"
             ]
           }
         ]
       },
       {
-        "tab": "CLI Reference",
-        "groups": [
-          {
-            "group": "uniac CLI",
-            "pages": [
-              "cli/overview"
-            ]
-          },
-          {
-            "group": "Contracts",
-            "pages": [
-              "cli/output",
-              "cli/exit-codes"
-            ]
-          }
+        "group": "Guides",
+        "pages": [
+          "setup",
+          "quickstart"
         ]
       }
     ],
@@ -80,85 +80,9 @@
     }
   },
   "redirects": [
-    { "source": "/sdk/overview", "destination": "/" },
-    { "source": "/sdk/service", "destination": "/concepts/model" },
-    { "source": "/sdk/system", "destination": "/concepts/model" },
-    { "source": "/sdk/node", "destination": "/concepts/manifest" },
-    { "source": "/sdk/nodespec", "destination": "/concepts/manifest" },
-    { "source": "/sdk/load", "destination": "/concepts/manifest" },
-    { "source": "/sdk/exceptions", "destination": "/cli/exit-codes" },
-    { "source": "/sdk/fastapi-service", "destination": "/" },
-    { "source": "/sdk/service-client", "destination": "/" },
-    { "source": "/sdk/ai-primitives", "destination": "/" },
-    { "source": "/sdk/changelog", "destination": "/" },
-    { "source": "/concepts/nodes", "destination": "/concepts/manifest" },
-    { "source": "/concepts/services", "destination": "/concepts/model" },
-    { "source": "/concepts/deployments", "destination": "/concepts/model" },
-    { "source": "/concepts/projects", "destination": "/concepts/model" },
-    { "source": "/concepts/references", "destination": "/concepts/manifest" },
-    { "source": "/concepts/endpoints", "destination": "/concepts/manifest" },
-    { "source": "/get-started/installation", "destination": "/quickstart" },
-    { "source": "/get-started/login", "destination": "/quickstart" },
-    { "source": "/get-started/your-first-service", "destination": "/quickstart" },
-    { "source": "/cli/build", "destination": "/cli/overview" },
-    { "source": "/cli/dev", "destination": "/quickstart" },
-    { "source": "/cli/install", "destination": "/quickstart" },
-    { "source": "/cli/init", "destination": "/cli/overview" },
-    { "source": "/cli/plan", "destination": "/cli/overview" },
-    { "source": "/cli/link", "destination": "/cli/overview" },
-    { "source": "/cli/deploy", "destination": "/cli/overview" },
-    { "source": "/cli/status", "destination": "/cli/overview" },
-    { "source": "/cli/auth", "destination": "/cli/overview" },
-    { "source": "/cli/config", "destination": "/cli/overview" },
-    { "source": "/cli/sim", "destination": "/cli/overview" },
-    { "source": "/guides/headless", "destination": "/quickstart" },
-    { "source": "/guides/agents", "destination": "/quickstart" },
-    { "source": "/guides/multi-service", "destination": "/concepts/manifest" },
-    { "source": "/dashboard/overview", "destination": "/" },
-    { "source": "/dashboard/billing", "destination": "/" },
-    { "source": "/dashboard/teams-and-members", "destination": "/" },
-    { "source": "/platform-api/overview", "destination": "/cli/overview" },
-    { "source": "/services/configuration", "destination": "/concepts/manifest" },
-    { "source": "/services/secrets", "destination": "/concepts/manifest" },
-    { "source": "/services/dependencies", "destination": "/concepts/manifest" },
-    { "source": "/services/service-to-service", "destination": "/concepts/model" },
-    { "source": "/services/fastapi-service", "destination": "/" },
-    { "source": "/services/routing-and-handlers", "destination": "/" },
-    { "source": "/services/ai-primitives", "destination": "/" },
-    { "source": "/local/simulator", "destination": "/cli/overview" },
-    { "source": "/local/iterating", "destination": "/cli/overview" },
-    { "source": "/local/multi-service", "destination": "/concepts/manifest" },
-    { "source": "/deploy/first-deploy", "destination": "/quickstart" },
-    { "source": "/deploy/environments", "destination": "/concepts/model" },
-    { "source": "/deploy/rollout-and-rollback", "destination": "/cli/overview" },
-    { "source": "/deploy/custom-domains", "destination": "/" },
-    { "source": "/operate/troubleshooting", "destination": "/cli/exit-codes" },
-    { "source": "/operate/scaling", "destination": "/concepts/model" },
-    { "source": "/operate/logs", "destination": "/" },
-    { "source": "/operate/metrics", "destination": "/" },
-    { "source": "/recipes/multi-service-app", "destination": "/concepts/manifest" },
-    { "source": "/recipes/background-job", "destination": "/" },
-    { "source": "/recipes/call-anthropic", "destination": "/" },
-    { "source": "/recipes/call-openai", "destination": "/" },
-    { "source": "/recipes/scheduled-task", "destination": "/" },
-    { "source": "/recipes/webhook-receiver", "destination": "/" },
-    { "source": "/ai-tools/claude-code", "destination": "/quickstart" },
-    { "source": "/ai-tools/cursor", "destination": "/quickstart" },
-    { "source": "/ai-tools/windsurf", "destination": "/quickstart" },
-    { "source": "/account/pricing", "destination": "/" },
-    { "source": "/account/limits", "destination": "/" },
-    { "source": "/essentials/markdown", "destination": "/" },
-    { "source": "/essentials/code", "destination": "/" },
-    { "source": "/essentials/images", "destination": "/" },
-    { "source": "/essentials/navigation", "destination": "/" },
-    { "source": "/essentials/reusable-snippets", "destination": "/" },
-    { "source": "/essentials/settings", "destination": "/" },
-    { "source": "/development", "destination": "/" },
-    { "source": "/api-reference/introduction", "destination": "/" },
-    { "source": "/api-reference/endpoint/get", "destination": "/" },
-    { "source": "/api-reference/endpoint/create", "destination": "/" },
-    { "source": "/api-reference/endpoint/delete", "destination": "/" },
-    { "source": "/api-reference/endpoint/webhook", "destination": "/" }
+    { "source": "/concepts/model", "destination": "/" },
+    { "source": "/concepts/manifest", "destination": "/resources/overview" },
+    { "source": "/cli/exit-codes", "destination": "/cli/output" }
   ],
   "logo": {
     "light": "/logo/light.png",

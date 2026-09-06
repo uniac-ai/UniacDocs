@@ -1,36 +1,22 @@
 ---
-title: "Uniac"
-description: "Describe a system in one file; the platform runs it."
+title: "Concepts"
+description: "Uniac is a cloud platform for building and operating systems of connected services."
+sidebarTitle: "Concepts"
 ---
 
-Uniac is a cloud deployment platform. You describe a system of container-based
-services in one `uniac.yaml`, the `uniac` CLI resolves one deployment from it
-into a deployable artifact, and the platform runs it — injecting the service's
-resolved environment, placing its containers on the project's private network,
-addressable by the instance name the deployment gives it, and allocating a
-public address for each exposure claimed, at most one per kind (`http` or
-`tcp`). `uniac deploy` ships one service per deployment, so a multi-service
-system is several deployments in that one file, deployed one at a time. A
-service either names a prebuilt image or points at a tree the CLI builds;
-nothing of Uniac ships inside either one.
+{/* Generated from uniac-ai/agent-skills: skills/uniac/references/concepts.md */}
 
-The CLI is built agent-first: offline verification, deterministic artifacts,
-typed exit codes on `deploy` and `status`, machine-clean output.
+Uniac is a cloud platform for building and operating systems of connected
+services.
 
-The [uniac-quickstart skill](https://github.com/uniac-ai/agent-skills/blob/main/skills/uniac-quickstart/SKILL.md)
-provides coding agents with a complete example of a first deployment.
+| Concept | Meaning |
+|---|---|
+| [Project](/project) | The remote scope containing services and volumes, with a shared private network. |
+| [Service](/resources/service/overview) | A named application component running within a project. |
+| [Volume](/resources/volume) | Durable storage with its own identity and lifetime, attached to a service or retained unattached. |
+| [Public endpoint](/resources/service/networking) | A service's public address for incoming traffic. |
 
-<CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Install the CLI and agent skills, then deploy a service.
-  </Card>
-  <Card title="The model" icon="cube" href="/concepts/model">
-    Services, deployments, projects.
-  </Card>
-  <Card title="The manifest" icon="file-code" href="/concepts/manifest">
-    The complete `uniac.yaml` schema.
-  </Card>
-  <Card title="CLI reference" icon="terminal" href="/cli/overview">
-    Every command, the run output, the exit codes.
-  </Card>
-</CardGroup>
+[Resources](/resources/overview) describe the application: reusable service
+definitions and deployment declarations that give their instances names.
+The application description and the remote project are separate; the same
+description can target different projects.

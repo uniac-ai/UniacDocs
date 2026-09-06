@@ -1,237 +1,138 @@
 ---
-title: "The uniac CLI"
-description: "Every command, its flags, and its behavior."
+title: "Uniac CLI"
+description: "npm install -g @uniac/cli installs the uniac command with Node 18+. npx -y @uniac/cli … runs the same command without a global installation."
 ---
 
-A single Go binary, installed with `npm i -g @uniac/cli` (Node 18 or newer).
-`npx -y @uniac/cli` runs it without a global installation.
+{/* Generated from uniac-ai/agent-skills: skills/uniac/references/cli/overview.md */}
 
-`deploy` and `status` both report platform state: each prints
-the platform's account of your services through the same
-[state block](/cli/output), and each exits with a
-[typed status](/cli/exit-codes) from the closed set 0, 2–10, 70. Neither
-invents that account — a run that failed before it reached the platform prints
-its failure and no service rows at all, though once **link** names a project
-the block's `project` row appears, read from the local binding. `init`,
-`plan`, `link`, `project`, and `auth` never speak that vocabulary: they exit
-`1` on error, `2` on a usage error; `version` always exits `0`.
+`npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
+`npx -y @uniac/cli …` runs the same command without a global installation.
 
-`plan` and `deploy` target a **deployment**: the named resource, else the
-manifest's `default`, else its only deployment. `plan`, `deploy`, and
-`status` locate the project directory with `--dir`; `link` uses `-C`.
+## Invocation
 
-## `uniac init`
+Local directory options default to the current directory. Flag parsing stops
+at the first positional argument; flags after it are not parsed as options.
+`uniac -h` lists commands, and a command's `-h` prints its usage.
 
-```bash
-uniac init
-# equivalently, without installing anything first:
-npm create @uniac@latest
-```
-
-`npm create @uniac@latest` runs `uniac init` — the `@uniac/create` package
-is that one forwarding, so both forms behave identically, arguments
-included.
-
-Asks for a service name — the default is the directory name lowercased, with
-every character outside `a-z0-9-_` replaced by `-` and leading and trailing
-separators dropped, or `app` when what remains is not a
-[resource name](/concepts/manifest#top-level) the scaffold can use — then
-shows the manifest it will write and asks you to confirm. The result is
-`uniac.yaml` in the current directory: one image-sourced service plus the
-deployment that instantiates it, ready for `uniac plan`. Takes no flags, and
-refuses to overwrite an existing manifest.
-
-## `uniac plan`
-
-```bash
-uniac plan [--json] [--full] [--dir <path>] [resource]
-```
-
-Resolves a deployment and previews the
-[deployable](/concepts/manifest#the-deployable). `deploy` runs the same
-resolution first, so a manifest that fails `plan` stops `deploy` too, before
-anything is sent anywhere. The two report it differently: `plan` writes
-`Error: <message>` to stderr and exits `1`, `deploy` names `manifest` in the
-run frame and exits `5`.
-
-| Flag | Effect |
+| Invocation | Purpose |
 |---|---|
-| `--json` | Emit the deployable artifact as JSON: `deployable`, `digest`, `resource`. |
-| `--full` | Include declaration details: env values, start command, and the definition an instance draws from when the two are named differently. |
-| `--dir <path>` | Project directory holding `uniac.yaml` (default `.`). |
+| `uniac init` | Create a starter `uniac.yaml` in the current directory. |
+| `uniac plan [--json] [--full] [--dir <path>] [deployment]` | Validate and preview a deployment declaration. |
+| `uniac project create <name>` | Create a remote project. |
+| `uniac link [-C <path>] [name-or-slug]` | Create or replace a directory's project binding. |
+| `uniac deploy [--dir <path>] [deployment]` | Build and deploy the selected declaration. |
+| `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
+| `uniac auth <login\|status\|token\|logout>` | Manage [authentication](/cli/authentication). |
+| `uniac version` | Print the installed binary's version, commit and build time. |
 
-Planning needs no network, no credentials, and no Docker daemon. It reads two
-things: the manifest, and — for a service sourced from `build:` — the project
-tree. The file is decoded whole, and most of its rules are checked across every
-resource it declares — a malformed env key, an instantiation naming a service
-that exists — whichever deployment you name. A handful are checked while `plan`
-composes the target you resolved, so they see only what that deployment
-instantiates; the manifest page
-[names them](/concepts/manifest#what-waits-for-deploy). A defect one of those
-would catch survives a clean plan until you name a target whose set brings it
-into view. For the messages, see
-[what fails at plan time](/concepts/manifest#what-fails-at-plan-time); for the
-rules `plan` passes and `deploy` applies, see
-[what waits for deploy](/concepts/manifest#what-waits-for-deploy).
+`--version` and `-v` are aliases for `version`. The CLI has no removal command.
+[Output](/cli/output) describes result formats, progress and exit codes.
 
-## `uniac project create`
+## Local initialization
 
-```bash
-uniac project create <name>
-```
+`init` runs offline and writes one prebuilt-image service definition and a
+deployment named `main` that instantiates it. It declares no public exposure.
+It prompts for a service name, previews the file and asks for confirmation;
+end-of-input accepts the defaults. The default name comes from the directory
+name, with `app` as the fallback when it cannot be used. An existing
+`uniac.yaml` prevents initialization.
 
-Creates a [project](/concepts/model#project) on the account the session
-belongs to and prints its name and the slug the platform assigned:
+`npm create @uniac@latest` invokes `uniac init` through the `@uniac/create`
+package. Initialization creates no remote project or directory binding.
 
-```text
-Created project my-app (my-app-e5f6g7h8).
-```
+## Project selection
 
-It prompts for nothing, and it writes no link binding — pointing a directory
-at the new project is `uniac link <name>`. The name must match
-`^[a-z][a-z0-9-]{0,62}$`, checked before the CLI dials, so a malformed name
-fails offline; a name the account already carries is refused by the platform.
+Deployment addresses an existing [remote project](/project).
+`project create <name>` creates one on the authenticated account and prints
+its name and assigned slug. It does not prompt or write local files, and
+requires neither `uniac.yaml` nor Docker. Project creation and linking use the
+platform selected by `UNIAC_PLATFORM_URL`, whose default and credential
+selection are described in [Authentication](/cli/authentication).
 
-## `uniac link`
+`link` requires a directory containing `uniac.yaml`; it checks that the file
+exists without validating its contents. An exact project slug or a uniquely
+matching name selects the project without a prompt. No argument opens the
+project picker, even when the account has only one project; multiple matching
+names also require selection. No match, no projects or unanswered required
+input causes failure.
 
-```bash
-uniac link [-C dir] [name|slug]
-```
+Linking writes or replaces `.uniac/deploy.json` in the selected directory:
 
-Binds the directory to a remote [project](/concepts/model#project), writing
-`.uniac/deploy.json` (per-checkout state — gitignore it). The binding
-records the project's identity and its endpoints —
-`{project_slug, project_name, gateway_url, platform_url}`, as the platform
-reported them at link time — so commands in a linked directory follow the
-binding rather than ambient environment settings. `project_name` is the name
-given at `project create`, unique within the account; `project_slug` is the
-identifier the platform assigned the project, and the label of its gateway
-host; `gateway_url` is the project's gateway, the endpoint the CLI pushes
-images to and registers services with; `platform_url` is the platform API
-origin the project belongs to (`https://api.uniac.ai` by default). With no argument, lists
-the projects on your account and prompts. The directory must already hold a
-`uniac.yaml` — checked before authentication.
-
-It binds to a project that already exists and creates nothing. On an account
-with no projects it stops and names the command that does:
-
-```text
-Error: no projects on this account, so there is nothing to link
-create one with `uniac project create <name>`, then run `uniac link <name>`
-`uniac auth status` shows which account this session is signed in to
-```
-
-## `uniac deploy`
-
-```bash
-uniac deploy [--dir <path>] [resource]
-```
-
-Deploys to the linked project, in phases, fail-fast:
-
-- **plan** — the same offline resolution, so a broken manifest stops the run
-  before it asks for anything.
-- **link** — resolves the binding and your session. Without a
-  `.uniac/deploy.json` binding or `UNIAC_PROJECT_URL`, drops into the
-  interactive project picker — or, on an account with no projects to pick
-  from, stops at [`4`](/cli/exit-codes) naming `uniac project create`. It
-  creates nothing either way.
-- **build** — obtains one container per service through your local Docker
-  daemon, for `linux/amd64`. A service that declares
-  [`image:`](/concepts/manifest#type-service-and-type-stateful) is pulled with
-  your own Docker credentials, exactly as `docker pull` would. A service that
-  declares [`build:`](/concepts/manifest#the-build-source) is built from your
-  own tree: the CLI serves the build context and the Dockerfile to the
-  daemon's BuildKit builder, filtered by the tree's own `.dockerignore` and
-  nothing else, with no build args. Either way the work happens on every
-  deploy — nothing carries over from the last run — so a repeat is quick only
-  to the extent the daemon's layer cache makes it so.
-- **`push <service>`** — publishes each image to the project registry.
-- **`deploy <service>`** — registers the service, then polls the platform
-  every two seconds for up to five minutes and reports what it settled as.
-  Registration alone is not success.
-
-A reachable daemon is required whether you pull or build. The CLI opens it at
-the start of **build**, before any image work, so an unreachable daemon fails
-there immediately and says what to do about it — the daemon's own error, then
-the install step for your operating system and the line to re-run:
-
-```text
-  ✗ build
-      docker daemon: Cannot connect to the Docker daemon at tcp://127.0.0.1:2375. Is the docker daemon running?
-      deploy pulls and builds images through the local Docker daemon, which is not reachable
-      start Docker Desktop, or install it: brew install --cask docker
-      re-run `uniac deploy` once the daemon is up
-```
-
-A build source that is not on disk never gets that far: a missing root,
-context, or Dockerfile is a manifest failure, raised in **plan**. What the
-Dockerfile itself gets wrong — a syntax error, a `target` stage that does not
-exist, a failing `RUN` — fails in **build**.
-
-Rejects a deployment instantiating more than one service — compose
-[one deployment per service](/concepts/model#deployment).
-
-## `uniac status`
-
-```bash
-uniac status [--dir <path>] [service]
-```
-
-Reads what the linked project is running and prints the
-[state block](/cli/output); changes nothing. With a service name, reports that
-one service — the whole-project view is the only one that also lists the
-project's volumes. `deploy` and `status` project the same facts through the
-same code, so the two accounts cannot drift — `status` is the authoritative
-re-read whenever a deploy's account looks stale.
-
-A service the project runs appears here whether or not the manifest still
-describes it — for how to retire one, see
-[what is running is not the manifest](/concepts/model#project).
-
-## `uniac auth`
-
-```bash
-uniac auth <login|status|token|logout>
-```
-
-| Subcommand | What it does |
+| Field | Meaning |
 |---|---|
-| `login` | Obtain an access token through browser sign-in and create or replace the selected platform's stored session. Account creation is available during sign-in. |
-| `status` | Print stored identities and expiry times for every platform, including expired sessions. Ignores `UNIAC_ACCESS_TOKEN` and does not validate credentials with the server. |
-| `token` | Print the access token selected by the rules below; exits `1` when none is usable. |
-| `logout` | Delete every stored session. |
+| `project_name` | The remote project's account-scoped name, used for platform reads. |
+| `project_slug` | The project's assigned identifier. |
+| `gateway_url` | The project gateway used for image uploads and deployment requests. |
+| `platform_url` | The platform API origin used for credentials and observations. |
 
-Sessions are stored in `~/.uniac/auth.json` (mode 0600), one per platform.
-Signing in to one platform preserves the sessions for others.
-`UNIAC_PLATFORM_URL` selects the platform for `login` and `token`
-(default `https://api.uniac.ai`).
+The binding belongs to the local directory. Different directories can select
+the same project, and replacing a binding does not move or recreate remote
+services.
 
-Platform commands and `auth token` use a nonempty `UNIAC_ACCESS_TOKEN` first,
-otherwise the stored token for the platform they address. The environment
-override has no local expiry check. A stored token becomes unusable 60 seconds
-before its recorded expiry. The CLI does not refresh tokens automatically.
+`deploy` and `status` select their destination as follows:
 
-`login` says whether it opened a browser and prints the login URL either
-way. Flags: `--no-browser` skips opening one; `--manual` skips the local callback server and prompts
-you to paste the redirected URL back, independently of `--no-browser`;
-`--host <host>` names the UniacWeb host serving the handoff (env
-`UNIAC_AUTH_HOST`). The default platform signs in at `uniac.ai`; with
-`UNIAC_PLATFORM_URL` naming any other platform, the host must be given
-explicitly — the CLI never derives a sign-in host from a platform's name,
-and `login` stops naming both overrides instead.
+- A nonempty `UNIAC_PROJECT_URL` supplies a gateway URL or project slug,
+  overriding the binding. It supplies no project name, and the platform origin
+  comes from `UNIAC_PLATFORM_URL`.
+- Otherwise the binding supplies the project gateway and platform. A
+  conflicting explicit `UNIAC_PLATFORM_URL` fails before a network call. A
+  binding without `platform_url` uses the selected default platform; one
+  without `gateway_url` derives the gateway from its slug.
+- Without a binding or override, `deploy` opens the project picker and saves
+  the selected binding. `status` does not open a picker.
 
-`uniac auth -h` prints the subcommand list and every subcommand's `-h`
-prints its own usage without doing anything; `status`, `token`, and
-`logout` take no flags or arguments, and anything else on their line is a
-usage error (exit 2) that also does nothing. Only `login` touches the
-network.
+`status` requires a project name from the binding, so a target supplied only
+by `UNIAC_PROJECT_URL` cannot support it. Its local directory needs no
+`uniac.yaml` or Docker. The command reads services even when they are absent
+from the local description; whole-project status also reads volumes.
 
-## `uniac version`
+## Planning and deployment
 
-```bash
-uniac version
-```
+`plan` and `deploy` read `uniac.yaml` from `--dir`. They select the explicitly
+named deployment declaration, otherwise `default`, otherwise the file's sole
+deployment. Failure to select a deployment is an error. This selection is
+independent of the remote project binding.
 
-Prints the version, commit, and build time of the binary on your PATH.
-`--version` and `-v` do the same.
+`plan` performs [description validation](/resources/overview) offline,
+without credentials or Docker. It decodes the whole file and composes the
+selected declaration, including checking that its build paths exist. It
+does not run Docker builds or check remote project state. `--full` expands the
+text preview; `--json` returns the generated description, as specified in
+[Output](/cli/output#plan-output).
+
+`deploy` repeats this planning before authentication or remote activity, then
+requires exactly one entry in the selected declaration's `services` mapping.
+`plan` accepts declarations with multiple entries; a successful plan does not
+establish that this deployment limit is satisfied.
+
+Deployment additionally requires credentials for the target project's
+platform and a reachable local Docker daemon for either `image:` or `build:`.
+A saved binding is optional because deployment can select an existing project
+interactively.
+
+For [service sources](/resources/service/overview), deployment pulls
+prebuilt images using local Docker credentials or builds from the current
+working tree. Both target `linux/amd64`. The build context's `.dockerignore`
+filters input; `.gitignore` does not. Builds run on every deployment, use
+Docker's layer cache and receive no injected build arguments. The resulting
+image is pushed to the project registry and registered with the service
+description.
+
+Missing build directories or Dockerfiles fail during local planning.
+Dockerfile syntax, missing build stages, failing build commands, image pulls
+and daemon availability are checked during image work. The platform applies
+the remote [service](/resources/service/overview),
+[exposure](/resources/service/networking) and
+[storage](/resources/volume) constraints when the deployment is submitted.
+
+When the target has a project name, registration returns a task ID and the
+initial task read succeeds, the CLI polls every two seconds until the task
+finishes or a five-minute observation deadline passes. Without those
+conditions it can return success after registration without observing task
+completion. Interrupting the CLI or reaching the deadline does not cancel
+work already accepted by the platform.
+
+After a successful release, the CLI writes a local release record under
+`~/.uniac/store`; `UNIAC_STORE_DIR` selects another directory.
+[Output](/cli/output#partial-observations-and-warnings) describes recording
+failures.
