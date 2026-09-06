@@ -14,7 +14,9 @@ pages; `docs-source.json` identifies their source commit.
   owns route mapping and conversion; `tools/sync_docs.py` selects its source.
 
 The public setup guide becomes `/setup`, quickstart becomes `/quickstart`,
-and Concepts becomes `/`. Other references keep their source-relative paths.
+and the system overview in `composition/overview.md` becomes `/`. Other
+references keep their source-relative paths. The sidebar starts with that
+overview, then Composition, Resources, and Uniac CLI; Guides are separate.
 The exporter derives frontmatter, preserves code, and converts documentation
 links to website routes. Links to the installable skill itself stay external.
 
