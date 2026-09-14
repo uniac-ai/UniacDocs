@@ -7,7 +7,8 @@ The source repository and commit are recorded in `docs-source.json`.
 ## Update documentation
 
 Make content changes in the public repository, then generate from its
-published commit and verify the result:
+published commit and verify the result. Mintlify and its child processes
+require a supported Node.js version on `PATH`:
 
 ```sh
 python3 tools/sync_docs.py --revision <full-public-commit-sha>
