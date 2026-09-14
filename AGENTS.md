@@ -12,6 +12,10 @@ pages; `docs-source.json` identifies their source commit.
 - Change the visual skin in `custom.css`, with assets in `logo/` and `images/`.
 - Every `.mdx` page is generated. The public repository's `tools/export_docs.py`
   owns route mapping and conversion; `tools/sync_docs.py` selects its source.
+- `skill.md` is the skill this site serves at `/skill.md` and its skill discovery
+  endpoints, in place of the one Mintlify generates. It is the public
+  repository's `skills/uniac/SKILL.md` with links to these pages; change both
+  together.
 
 The public setup guide becomes `/setup`, quickstart becomes `/quickstart`,
 and the top-level system overview in `references/overview.md` becomes `/`. Other
