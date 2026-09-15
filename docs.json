@@ -118,5 +118,10 @@
     "socials": {
       "x": "https://x.com/uniac"
     }
+  },
+  "integrations": {
+    "ga4": {
+      "measurementId": "G-9YM8063V0V"
+    }
   }
 }
