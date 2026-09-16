@@ -6,8 +6,6 @@
 drafts/
 *.draft.mdx
 
-# Maintainer tooling and source provenance
-tools/
-docs-source.json
+# Maintainer guidance
 AGENTS.md
 CLAUDE.md

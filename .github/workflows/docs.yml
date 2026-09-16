@@ -1,4 +1,4 @@
-name: Documentation source
+name: Documentation checks
 
 on:
   pull_request:
@@ -9,11 +9,14 @@ permissions:
   contents: read
 
 jobs:
-  source:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
-      - run: python3 tools/sync_docs.py --check
+          # mint refuses Node below 20.17 at run time.
+          node-version: '20'
+      - run: npm install -g mint
+      - run: mint validate
+      - run: mint broken-links

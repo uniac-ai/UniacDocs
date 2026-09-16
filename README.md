@@ -1,43 +1,29 @@
 # UniacDocs
 
-Mintlify publication of the Markdown documentation authored in
-[uniac-ai/agent-skills](https://github.com/uniac-ai/agent-skills).
-The source repository and commit are recorded in `docs-source.json`.
+The documentation for [Uniac](https://uniac.ai), a cloud deployment platform,
+published at [docs.uniac.ai](https://docs.uniac.ai) by Mintlify from this
+repository's `main`. Every public product fact is written here, once.
 
-## Update documentation
+## Edit
 
-Make content changes in the public repository, then generate from its
-published commit and verify the result. Mintlify and its child processes
-require a supported Node.js version on `PATH`:
-
-```sh
-python3 tools/sync_docs.py --revision <full-public-commit-sha>
-python3 tools/sync_docs.py --check
-mint broken-links
-mint validate
-```
-
-The sync command fetches that exact commit and runs its exporter. A normal
-`python3 tools/sync_docs.py` regenerates from the existing pin; `--check`
-reports changed, missing, or extra MDX pages without modifying them. CI runs
-the pinned-source check on every pull request and push to `main`.
-
-To preview uncommitted public-source changes, explicitly select that worktree:
-
-```sh
-python3 tools/sync_docs.py --source-dir /absolute/path/to/public-source-worktree
-python3 tools/sync_docs.py --source-dir /absolute/path/to/public-source-worktree --check
-```
-
-These local commands leave the commit pin unchanged. Pin the resulting public
-commit before publishing the docs update.
-
-## Preview the website
+The `.mdx` files are the pages; `docs.json` holds navigation and theme;
+`custom.css`, `logo/` and `favicon.png` are the visual skin. Preview and
+check locally (Mintlify's CLI needs Node 20.17+):
 
 ```sh
 npm install -g mint
-mint dev
+mint dev            # http://localhost:3000
+mint validate
+mint broken-links
 ```
 
-Preview at `http://localhost:3000`. Website navigation and styling are owned
-here; all MDX pages are generated. See [AGENTS.md](AGENTS.md) for ownership.
+CI runs the two checks on every pull request and push to `main`. Merging to
+`main` publishes: the Mintlify GitHub app deploys the commit and reports the
+result as its "Mintlify Deployment" check.
+
+Beside the pages, Mintlify serves their Markdown versions (`/<route>.md`),
+`llms.txt`, `llms-full.txt` and a `skill.md` it generates itself. The
+public `uniac` agent skill in [uniac-ai/agent-skills](https://github.com/uniac-ai/agent-skills)
+compresses these pages and links to them; nothing here is written for it.
+
+[AGENTS.md](AGENTS.md) covers ownership and how the pages are written.
