@@ -23,8 +23,7 @@ result as its "Mintlify Deployment" check.
 
 Beside the pages, Mintlify serves their Markdown versions (`/<route>.md`),
 `llms.txt`, `llms-full.txt` and a `skill.md` it generates itself. The
-installable agent skills in [uniac-ai/agent-skills](https://github.com/uniac-ai/agent-skills)
-are built from the published site by Uniac's release process; nothing here is
-written for them.
+public `uniac` agent skill in [uniac-ai/agent-skills](https://github.com/uniac-ai/agent-skills)
+compresses these pages and links to them; nothing here is written for it.
 
 [AGENTS.md](AGENTS.md) covers ownership and how the pages are written.

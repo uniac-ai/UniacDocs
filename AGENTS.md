@@ -2,9 +2,9 @@
 
 The documentation for Uniac, a cloud deployment platform: the Mintlify project
 behind docs.uniac.ai, and the only written copy of every public product fact.
-The installable agent skills are built from the published site; this
-repository holds nothing for them, and Mintlify's generated `skill.md` is
-Mintlify's own.
+The public `uniac` agent skill ([uniac-ai/agent-skills](https://github.com/uniac-ai/agent-skills))
+compresses these pages and links to them; this repository holds nothing for
+it, and Mintlify's generated `skill.md` is Mintlify's own.
 
 ## Ownership
 
