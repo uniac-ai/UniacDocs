@@ -1,10 +1,10 @@
 ---
 title: "Set up Uniac for your agent"
-description: "Uniac machine setup installs the Uniac skills for the coding agent, makes the uniac command available, and connects it to the user's Uniac account. Project creation and application deployment are separate tasks."
+description: "Uniac machine setup installs the Uniac skill for the coding agent, makes the uniac command available, and connects it to the user's Uniac account. Project creation and application deployment are separate tasks."
 ---
 
 
-Uniac machine setup installs the Uniac skills for the coding agent, makes
+Uniac machine setup installs the Uniac skill for the coding agent, makes
 the `uniac` command available, and connects it to the user's Uniac account.
 Project creation and application deployment are separate tasks.
 
@@ -30,15 +30,14 @@ npx -y skills@1.5.15 add uniac-ai/agent-skills -g -a codex -y
 npx -y skills@1.5.15 add uniac-ai/agent-skills -g -a cursor -y
 ```
 
-Each command installs both skills globally for the named agent and answers the
-installer's prompts. Repeating it updates the installed skills. Additional
-integrations are listed in the installer's
+Each command installs the `uniac` skill globally for the named agent and
+answers the installer's prompts. Repeating it updates the installed skill.
+Additional integrations are listed in the installer's
 [supported agents](https://github.com/vercel-labs/skills/tree/v1.5.15#supported-agents).
 
-| Installed skill | Purpose |
-|---|---|
-| [uniac](https://github.com/uniac-ai/agent-skills/blob/main/skills/uniac/SKILL.md) | Framework documentation: concepts, projects, services, volumes, networking, and CLI operation. |
-| [uniac-quickstart](/quickstart) | A complete first-deployment example. |
+The [uniac skill](https://github.com/uniac-ai/agent-skills/blob/main/skills/uniac/SKILL.md)
+gives the agent a working model of Uniac — composition, deployment, platform
+behavior and CLI operation — and links to these pages for complete contracts.
 
 ## CLI
 
