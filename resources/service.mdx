@@ -89,6 +89,11 @@ The platform accepts ports 1–65535 and at most one exposure of each type per
 service. These limits are enforced during deployment, beyond local schema
 validation.
 
+Endpoint addresses use hostnames Uniac issues: the current release has no
+custom-domain binding, no per-service certificate and no UDP exposure. An HTTP
+request through a public endpoint times out after 60 seconds. A `tcp`
+endpoint keeps its allocated public port while the endpoint exists.
+
 ## Environment and references
 
 Environment variables provide runtime configuration to a service's containers.
@@ -102,6 +107,10 @@ name and a plaintext string value, optionally containing references. Names
 match `^[A-Za-z_][A-Za-z0-9_]*$`; `host` is reserved for the builtin reference.
 At deployment, the platform accepts at most 64 declared variables, with names
 up to 128 characters and values up to 4096 characters.
+
+Declared values are stored with the deployment, and the dashboard shows the
+serving deployment's values. The current release has no separate secret
+store; changing a value deploys a new version.
 
 ### References
 
@@ -217,8 +226,10 @@ In live state, a deployment is a version of one service, with its own
 lifecycle and running containers. Redeploying an existing instance updates
 that service. Redeploying with a different service type is rejected.
 
-The platform observes container-process liveness. It performs no application
-health or readiness probes.
+The platform observes container-process liveness and restarts a container
+whose process exits. It performs no application health or readiness probes.
+The current release has no rollback, canary or traffic-splitting controls;
+deploying an earlier image creates a new version.
 
 ### Observed state
 
@@ -235,6 +246,7 @@ health or readiness probes.
 
 ### Dashboard and removal
 
-A service's dashboard page shows its state, public endpoints, and deployment
-activity, and offers **Delete service**. Its volume's retention and deletion
+A service's dashboard page shows its state, public endpoints, deployment
+activity and resource usage. It sets a stateless service's replica count, up
+to four, changes its public endpoints, and offers **Delete service**. Its volume's retention and deletion
 are governed by the [volume lifecycle](/resources/volume#lifecycle).

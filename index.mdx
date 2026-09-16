@@ -1,12 +1,13 @@
 ---
 title: "How Uniac works"
-description: "Uniac is a cloud platform for building and operating distributed applications. It brings together services, private communication, public endpoints, and persistent storage so an application can run as connected components."
+description: "Uniac is a cloud platform for AI agents to build and deploy web apps, websites, APIs, databases and background workers. A project runs an application's services as containers on a private network, with public HTTP and TCP endpoints and persistent volumes."
 ---
 
 
-Uniac is a cloud platform for building and operating distributed applications.
-It brings together services, private communication, public endpoints, and
-persistent storage so an application can run as connected components.
+Uniac is a cloud platform for AI agents to build and deploy web apps,
+websites, APIs, databases and background workers. A project runs an
+application's services as containers on a private network, with public HTTP
+and TCP endpoints and persistent volumes.
 
 ## Accounts, projects, and applications
 
@@ -81,3 +82,20 @@ across the project.
 and combines these parts in an example. Detailed configuration and lifecycle
 information is available for [Service](/resources/service) and
 [Volume](/resources/volume).
+
+## Current limits
+
+These limits apply across the platform in the current release:
+
+- Services run in one Google Cloud region; there is no region selection.
+- Every replica runs at the platform's standard CPU and memory size; there is
+  no per-service sizing.
+- A project belongs to a single account; there are no teams or roles.
+- Deployment tasks and service state are observable; application log output
+  is not.
+
+Limits of individual resources are stated with them:
+[public endpoints](/resources/service#public-endpoints),
+[environment values](/resources/service#environment-and-references),
+[runtime behavior and versions](/resources/service#runtime-and-deployment-versions),
+and [volumes](/resources/volume#lifecycle).
