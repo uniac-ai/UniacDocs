@@ -86,7 +86,7 @@ storage state in [Volume lifecycle](/resources/volume#lifecycle).
 | `platform` | The platform API origin, shown only when it differs from production. |
 | `root` | The resolved local project directory, included in deployment reports. |
 | `service` | A service name, followed by `v<N>` when a serving version was read. |
-| `status` | Reported status, with `(observed/effective)` when replica observation is available. |
+| `status` | Reported status, followed by the `(observed/effective)` replica counts. |
 | `kind` | Reported service kind, omitted when unavailable. |
 | `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
 | `deploying` | The in-flight task state and its current step when reported. |
