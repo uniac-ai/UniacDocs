@@ -27,13 +27,13 @@ helper; the printed URL remains available to open manually.
 
 Without `--manual`, login receives the redirect through a listener on a random
 localhost port and waits up to five minutes. The default platform uses
-`uniac.ai` for sign-in. Another platform requires an explicit `--host` or
-`UNIAC_AUTH_HOST`; the CLI does not infer a website from the platform origin.
+`uniac.ai` for sign-in. Another platform takes its sign-in website from
+`--host` or `UNIAC_AUTH_HOST`.
 
 Successful sign-in stores the returned token in `~/.uniac/auth.json`, with
 file permissions `0600`. There is one stored session per platform; signing
-in replaces that platform's session and preserves the others. The CLI does
-not validate the token with the platform API before storing it.
+in replaces that platform's session and preserves the others. The CLI stores
+the token as sign-in returns it, and deployment checks it with the platform.
 
 ## Credential selection and renewal
 
@@ -41,18 +41,16 @@ not validate the token with the platform API before storing it.
 `UNIAC_ACCESS_TOKEN` first, otherwise the stored session for the addressed
 platform. Linked `deploy` and `status` use the binding's platform origin;
 `auth token` uses `UNIAC_PLATFORM_URL`, independently of the project binding.
-The override receives no local expiry check. A stored token becomes unusable
-60 seconds before its recorded expiry. Without an override, missing or
-expired stored credentials stop deployment before a network call.
+An override is used as given. A stored token is usable until 60 seconds
+before its recorded expiry, and deployment needs a usable credential before
+its first network call.
 
 Deployment checks the selected credential with the platform before image
-work and uses that credential throughout the operation. Local selection
-alone does not establish server acceptance; `auth status` and `auth token`
-perform no such check.
+work and uses that credential throughout the operation. `auth status` and
+`auth token` read the local sessions only.
 
-The CLI does not refresh tokens automatically. Another `auth login` obtains
-and stores the token returned by sign-in; it does not guarantee a different
-token or a later expiry.
+A stored token is used until it expires. `uniac auth login` stores the token
+that sign-in returns, with the expiry sign-in sets.
 
 ## Stored sessions
 
@@ -62,11 +60,12 @@ token or a later expiry.
 | `uniac auth token` | Print the selected credential; fail when none is locally usable. |
 | `uniac auth logout` | Remove all locally stored platform sessions. |
 
-`auth status`'s `Logged in.` message means stored sessions exist; it does not
-inspect `UNIAC_ACCESS_TOKEN`. Logout does not clear that variable or revoke
-tokens at the platform.
+`auth status`'s `Logged in.` message reports stored sessions; commands that use
+credentials read `UNIAC_ACCESS_TOKEN` themselves. Logout removes the stored
+sessions from this machine, and issued tokens stay valid at the platform until
+they expire.
 
 `uniac auth -h` lists subcommands; each subcommand's `-h` prints its usage.
-`status`, `token` and `logout` accept no flags or arguments. Help and invalid
-invocations perform no authentication operation. Only `login` uses the
-network.
+`status`, `token` and `logout` take no flags or arguments. Help and invalid
+invocations leave sessions unchanged, and `login` is the subcommand that uses
+the network.

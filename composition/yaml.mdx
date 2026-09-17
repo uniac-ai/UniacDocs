@@ -1,13 +1,12 @@
 ---
 title: "Composition in YAML"
-description: "uniac.yaml declares infrastructure objects in YAML. A workspace combines package directories; resources declares reusable service definitions and the deployment declarations that instantiate them. YAML is the currently supported composition format."
+description: "uniac.yaml declares an application's infrastructure in YAML: resources holds reusable service definitions and the deployment declarations that instantiate them, and a workspace combines package directories."
 ---
 
 
-`uniac.yaml` declares infrastructure objects in YAML. A `workspace` combines
-package directories; `resources` declares reusable service definitions and
-the deployment declarations that instantiate them. YAML is the currently
-supported composition format.
+`uniac.yaml` declares an application's infrastructure in YAML: `resources`
+holds reusable service definitions and the deployment declarations that
+instantiate them, and a `workspace` combines package directories.
 
 ## File format
 
@@ -17,7 +16,7 @@ The document is a mapping with these top-level fields:
 |---|---|---|
 | `resources` | Unless `workspace` is present | Mapping of resource names to typed definitions; may be empty in a workspace document. |
 | `workspace` | No | Workspace metadata and included package directories. |
-| `runtime` | No | Composition format: `yaml`, the default and only supported value. |
+| `runtime` | No | Composition format: `yaml`, the default. |
 
 Resource names match `^[a-z0-9]+(?:(?:__?|-+)[a-z0-9]+)*$` and are unique
 within the file. Every resource requires `type`; unknown fields are rejected
@@ -48,32 +47,29 @@ workspace:
 Paths are relative to the workspace root and must name directories below it.
 Missing manifests, duplicate canonical directories, paths escaping the root,
 globs, and nested workspaces are rejected. Inclusion loads exactly the listed
-manifests; it does not recursively discover packages. Root-local `resources`
-can accompany `workspace` without including the root itself.
+manifests. Root-local `resources` can accompany `workspace` directly.
 
 A manifest outside any workspace owns a standalone project. Inside a
-workspace, a package must be explicitly included to participate; an unlisted
-manifest does not establish a separate project.
+workspace, every manifest below the root is listed in `includes`.
 
-Resource names and `from` lookups are local to each package. Different
-packages may reuse definition names, but the concrete services instantiated
-across the project must have unique names. Environment references can address
-instances from any deployment in their own package. Cross-package references,
-including references to root-local resources, are unsupported. Inclusion
-declares composition, not a package dependency.
+Resource names, `from` lookups and environment references are local to each
+package: a reference addresses instances from any deployment in its own
+package, and the root's resources form their own package. Different packages
+may reuse definition names; the concrete services instantiated across the
+project have unique names.
 
 ## Definitions and service instances
 
 `type: service` and `type: singleton` create reusable **service definitions**
 for stateless and singleton execution. A definition holds the OCI image or
 Dockerfile build source, environment, startup command, and storage needs.
-Declaring it alone creates no remote service. Complete field contracts are
-in [Service](/resources/service) and [Volume](/resources/volume).
+A deployment declaration turns it into a running service. Complete field
+contracts are in [Service](/resources/service) and [Volume](/resources/volume).
 
 A `type: deployment` resource **instantiates** definitions: its `services`
 mapping gives each instance a service name and a definition to instantiate.
 Every declaration contributes its named instances to the project's deployment
-description. Unreferenced service definitions remain uninstantiated.
+description, and a definition runs through the declarations that name it.
 
 | Field | Required | Meaning |
 |---|---|---|
@@ -81,16 +77,16 @@ description. Unreferenced service definitions remain uninstantiated.
 | `services.<instance>.from` | Yes | Name of a `service` or `singleton` definition in this file. |
 | `services.<instance>.public_ports` | No | [Public endpoint declarations](/resources/service#public-endpoints). |
 
-The **service instance** is the named remote service, not an individual
-container replica. Multiple instances can reuse one definition. The
+The **service instance** is the named remote service, and its replicas are
+the containers running it. Multiple instances can reuse one definition. The
 definition's name is a local label; the instance name supplies the service's
 identity in the target project. An instance name is one DNS label: lowercase
 letters, digits and dashes, starting and ending with a letter or digit, at
 most 63 characters.
 
 Deploying a project includes every deployment declaration in its root and
-included packages. A declaration creates no remote service group or
-environment; each resulting service has its own
+included packages. A declaration belongs to the description, and each
+resulting service has its own
 [deployment versions](/resources/service#runtime-and-deployment-versions).
 The target project's identity is supplied separately from this file.
 
@@ -156,15 +152,16 @@ deployable description.
 
 The generated description is JSON with `kind: deployable` and a `services`
 array. Each entry contains an instance name, normalized source declaration,
-environment templates, and runtime configuration. It contains no remote
-project binding, and environment values remain templates until deployment.
+environment templates, and runtime configuration. The remote project binding
+lives in `.uniac/deploy.json`, and environment values remain templates until
+deployment.
 Build paths are authored relative to the defining manifest's directory and
 normalized relative to the project root in the generated description. Thus
 `build: .` in `api/uniac.yaml` and `jobs/uniac.yaml` describes distinct sources.
 
 The digest identifies that description. Equivalent path spellings, omitted
-build defaults, YAML formatting, and mapping or exposure-list ordering do not
-change it. Reordering workspace includes or moving an identical checkout to
+build defaults, YAML formatting, and mapping or exposure-list ordering leave it
+unchanged. Reordering workspace includes or moving an identical checkout to
 another absolute path also preserves the digest. An explicit build `target`
 remains part of the description even when it names the Dockerfile's last
 stage. The digest excludes source-file and image contents and remotely
