@@ -1,12 +1,13 @@
 ---
 title: "How Uniac works"
-description: "Uniac is a cloud platform for building and operating distributed applications. It brings together services, private communication, public endpoints, and persistent storage so an application can run as connected components."
+description: "Uniac is a cloud platform for AI agents to build and deploy web apps, websites, APIs, databases and background workers. A project runs an application's services as containers on a private network, with public HTTP and TCP endpoints and persistent volumes."
 ---
 
 
-Uniac is a cloud platform for building and operating distributed applications.
-It brings together services, private communication, public endpoints, and
-persistent storage so an application can run as connected components.
+Uniac is a cloud platform for AI agents to build and deploy web apps,
+websites, APIs, databases and background workers. A project runs an
+application's services as containers on a private network, with public HTTP
+and TCP endpoints and persistent volumes.
 
 ## Accounts, projects, and applications
 
@@ -19,7 +20,7 @@ Its local description belongs to one project root with one remote project
 binding. A standalone description can contain one or several services. A
 workspace combines descriptions from included package directories under the
 same owner and destination. The workspace's optional name describes the local
-system; it does not select the remote project.
+system, and the project binding selects the remote project.
 
 ## Services and communication
 
@@ -30,21 +31,22 @@ application's OCI image. The service identity stays the same as its replicas
 change. A public endpoint allows clients outside the project to reach a service.
 
 A stateless service can run multiple interchangeable replicas behind that
-identity. Connections may reach different replicas; a replica's memory and
-local files belong to that replica. Services that need shared or persistent
-state communicate with the component holding it.
+identity. Connections may reach different replicas, and each replica keeps
+its own memory and local files. Services that need shared or persistent state
+communicate with the component holding it.
 
 ## Singleton services and volumes
 
-A singleton service permits at most one running replica per service in its
-project. During replacement, the previous replica stops before its successor
-starts. Both service kinds retain their network identity across replacement.
+A singleton service runs at most one replica at a time: during replacement,
+the previous replica stops before its successor starts, which gives the
+service's volume a single writer. Both service kinds keep their network
+identity across replacement.
 
 A volume supplies durable storage that survives replacement of the container
-using it. A singleton service can attach a volume; data written to its mount
-survives replica replacement. Singleton execution alone does not preserve
-memory or container-local files. The volume has its own identity and lifetime
-within the project. Detaching it or deleting its service retains the data.
+using it. A singleton service can attach a volume, and data that must outlive
+a replica is written to its mount. The volume has its own identity and
+lifetime within the project, and its data stays when it is detached or its
+service is deleted.
 
 For example, an application can have a stateless API and a singleton database.
 The API's replicas reach the database through its service identity; the
@@ -53,8 +55,9 @@ an endpoint for the API, while the database can remain private.
 
 ## Project lifetime
 
-The project retains live state independently of the application description.
-Removing a service from that description does not delete the running service.
+The project keeps its services running independently of the application
+description: a service stays until it is deleted, including after its
+declaration leaves the description.
 
 The [dashboard](https://uniac.ai) opens an account's projects and their
 services without a local application description. A project's **Settings**
@@ -66,16 +69,15 @@ services, endpoints, and every volume and its data, including detached volumes.
 A **composition** describes the resources making up an application and how
 they connect. A **service definition** supplies reusable image and runtime
 configuration. A **deployment declaration** instantiates definitions under
-service names in a target project. A definition alone creates no running
-service. Deploying the project creates or updates the service instances from
-every deployment declaration in its packages. Each instance can run the
-replicas permitted by its execution type.
+service names in a target project, and a service runs once a declaration
+instantiates its definition. Deploying the project creates or updates the
+service instances from every deployment declaration in its packages. Each
+instance runs the replicas its execution type allows.
 
 A package is a directory containing a description. Each package keeps its
-own resource and reference scope. Workspace inclusion combines their
-deployment contributions; it does not grant access to another package's
-definitions or environment references. Concrete service names remain unique
-across the project.
+own resource and reference scope: workspace inclusion combines the packages'
+deployments, and each package's definitions and environment references stay
+within that package. Concrete service names are unique across the project.
 
 [Composition in YAML](/composition/yaml) introduces the description file
 and combines these parts in an example. Detailed configuration and lifecycle

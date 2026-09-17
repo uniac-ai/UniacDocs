@@ -1,6 +1,6 @@
 ---
 title: "Output and errors"
-description: "deploy prints one final text report to stdout, containing its execution record followed by the state it could report. status prints the state and, if its read fails, an error block. Neither command has a JSON mode. Help and argument-parsing errors go to stderr and leave stdout empty."
+description: "deploy prints one final text report to stdout, containing its execution record followed by the state it could report. status prints the state and, if its read fails, an error block. Both reports are text. Help and argument-parsing errors go to stderr and leave stdout empty."
 ---
 
 
@@ -8,13 +8,14 @@ description: "deploy prints one final text report to stdout, containing its exec
 
 `deploy` prints one final text report to stdout, containing its execution
 record followed by the state it could report. `status` prints the state and,
-if its read fails, an error block. Neither command has a JSON mode. Help and
-argument-parsing errors go to stderr and leave stdout empty.
+if its read fails, an error block. Both reports are text; `plan --json` is the
+JSON output. Help and argument-parsing errors go to stderr and leave stdout
+empty.
 
 Deployment progress uses stderr. By default, a terminal with usable width
 gets a live display that clears when the run ends. `UNIAC_PROGRESS=1` streams
-plain progress lines; `UNIAC_PROGRESS=0` disables progress. These settings do
-not change stdout. `status` has no progress display.
+plain progress lines; `UNIAC_PROGRESS=0` turns progress off. These settings
+affect stderr only, and progress display applies to `deploy`.
 
 `link` writes its listing, prompt and confirmation to stderr, including when
 deployment opens the picker. Other commands write results to stdout and
@@ -45,12 +46,12 @@ The root line names the local project. Its children report `plan`,
 `link`, `build`, `push <service>`, `submit <service>`, and `observe <service>`.
 They include the digest of the generated description, project slug, image
 count, pushed image digest and observed status when available. Displayed
-digests are shortened; the
-state section contains no image reference or digest.
+digests are shortened, and image references and digests appear in the record
+section.
 
 `✓` marks completion and `✗` marks failure. On failure, the root line carries
 an error code and the failed stage includes its retained progress and error
-message. A deployment report has no separate `error` block. An interruption
+message. An interruption
 is classified under the stage in flight, and a nonzero exit can still leave
 a report and project or service rows.
 
@@ -102,8 +103,8 @@ port. Columns align within each block, so their character offsets vary.
 Whole-project `status` lists services in name order and adds project volume
 blocks after them. Each volume block has its name, `size` in GB and `state`,
 including the holding service when available. `deploy` and single-service
-`status` show service mounts but do not list volume entities, so they cannot
-show retained unattached volumes.
+`status` show service mounts; whole-project `status` also lists unattached
+volumes.
 
 ### Partial observations and warnings
 
@@ -116,13 +117,13 @@ volume read omits the volume section. Either can occur with exit 0. Missing
 rows therefore do not establish that the corresponding remote facts are
 absent.
 
-When deployment otherwise succeeds but cannot read a service's final state,
-it reports `state unread` as a warning. A failed local release-record write produces
+When deployment otherwise succeeds but its read of a service's final state
+fails, it reports `state unread` as a warning. A failed local release-record write produces
 `release record not written: <error>`; the remote deployment remains in place.
-These warnings do not make the command fail. A name-only service row means
+These warnings leave the exit code unchanged. A name-only service row means
 registration was accepted but service state was not read; it does not
 establish a running service. Rejected and unattempted submissions appear in
-release outcomes without an invented service-state row.
+release outcomes only.
 
 Platform warnings are passed through, including unresolved
 [environment references](/resources/service#environment-and-references).
@@ -147,11 +148,11 @@ The following exit codes apply to `deploy` and `status`:
 | 7 | `push` | Image upload failure. |
 | 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry or a refused platform read. |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
-| 10 | `pending` | Reserved; currently not emitted. |
+| 10 | `pending` | Reserved. |
 | 70 | `internal` | Unclassified failure. |
 
-Exit 1 is unassigned for these two commands. Some conditions use a code whose
-name does not describe the whole cause:
+These two commands use the codes above. Some conditions use a code whose name
+describes only part of the cause:
 
 - `status` without a binding or target override exits 4 when a credential is
   available; without a usable credential it exits 3. A target with no project

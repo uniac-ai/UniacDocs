@@ -23,6 +23,8 @@ states the CLI release it describes.
 
 ## Writing
 
+State what the current release does. A limit appears only as a specification value, in the field table or command contract it constrains: an accepted value, a range, a quota or a requirement. Overviews, explanations and examples describe what works. Negative wording ("cannot", "no", "not supported", "does not") is reserved for a deliberate design constraint, such as a singleton's single replica or a volume's single holder. Pages name no feature the platform lacks and say nothing about future releases.
+
 Write for a capable coding agent. Keep Uniac-specific facts: schema,
 prerequisites, effects, limits, and behavior. Review document boundaries,
 sections, and paragraphs before individual sentences. Each passage should
