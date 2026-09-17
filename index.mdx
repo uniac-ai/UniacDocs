@@ -1,13 +1,11 @@
 ---
 title: "How Uniac works"
-description: "Uniac is a cloud platform for AI agents to build and deploy web apps, websites, APIs, databases and background workers. A project runs an application's services as containers on a private network, with public HTTP and TCP endpoints and persistent volumes."
+description: "Uniac is a cloud platform for AI agents to build and deploy web apps, websites, APIs, databases and background workers."
 ---
 
 
 Uniac is a cloud platform for AI agents to build and deploy web apps,
-websites, APIs, databases and background workers. A project runs an
-application's services as containers on a private network, with public HTTP
-and TCP endpoints and persistent volumes.
+websites, APIs, databases and background workers.
 
 ## Accounts, projects, and applications
 
@@ -24,11 +22,13 @@ system, and the project binding selects the remote project.
 
 ## Services and communication
 
-Services represent the application's microservices. Each service has an
-identity within its project, which other services address on the private
-network. Each running copy, or **replica**, is a container running the
-application's OCI image. The service identity stays the same as its replicas
-change. A public endpoint allows clients outside the project to reach a service.
+A project runs an application's services as containers on a private network,
+with public HTTP and TCP endpoints and persistent volumes. Services represent
+the application's microservices. Each service has an identity within its
+project, which other services address on the private network. Each running
+copy, or **replica**, is a container running the application's OCI image. The
+service identity stays the same as its replicas change. A public endpoint
+allows clients outside the project to reach a service.
 
 A stateless service can run multiple interchangeable replicas behind that
 identity. Connections may reach different replicas, and each replica keeps
