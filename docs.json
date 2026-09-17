@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Uniac",
-  "description": "Documentation for Uniac, the cloud platform for AI agents to build and run web apps, websites, APIs and databases: uniac.yaml, services, volumes, the CLI and agent setup.",
+  "description": "Documentation for Uniac, the cloud platform for AI agents to build and run web apps, websites, agents and databases: uniac.yaml, services, volumes, the CLI and agent setup.",
   "colors": {
     "primary": "#0A0A0A",
     "light": "#FAFAFA",
