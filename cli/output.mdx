@@ -26,9 +26,10 @@ errors to stderr. A failure to render a status report can also write stderr.
 The text preview names the local project and root directory, its optional
 description, and the digest of its complete generated description. It then
 shows shared image work under `Building` and named services under
-`Deploying`. Service rows include sources, declared public exposure and
-volumes, grouped by package for a workspace. `--full` adds environment values,
-the start command, and the source definition's name.
+`Deploying`. Service rows include sources, declared public exposure, volumes
+and a declared replica count, grouped by package for a workspace. `--full`
+adds environment values, the start command, and the source definition's
+name.
 
 `plan --json` emits `{project, digest, deployable, declarations}`. `project`
 contains `root_dir`, `name`, optional `description`, and `packages` with each

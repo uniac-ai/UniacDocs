@@ -75,12 +75,13 @@ same definition, each as its own service.
 | Field | Required | Meaning |
 |---|---|---|
 | `from` | Yes | Name of a `service` or `singleton` definition in this file. |
+| `replicas` | No | Running container count: an integer from 0 to 4 for a `service` definition, 0 or 1 for a `singleton`. Omitted or `null`, the service keeps its current count, and a new service runs one. |
 | `public_ports` | No | [Public endpoint declarations](/resources/service#public-endpoints). |
 
-The service's replicas are the containers running it, and each deploy creates
-a new [deployment version](/resources/service#runtime-and-deployment-versions)
-of the service. A definition and a deployment declaration in the same file
-have different names. Renaming a
+The service's replicas are the containers running it;
+[deployment versions](/resources/service#runtime-and-deployment-versions)
+describes how each deployment applies the count. A definition and a
+deployment declaration in the same file have different names. Renaming a
 declaration names a different service, with its own hostname, reference
 target and volume names; the service deployed under the earlier name, and its
 data, stay in the project.
@@ -114,6 +115,7 @@ resources:
   api:
     type: deployment
     from: api_definition
+    replicas: 2
     public_ports: [{port: 8080, type: http}]
   cache:
     type: deployment
@@ -121,8 +123,9 @@ resources:
     public_ports: []
 ```
 
-The `api` declaration instantiates `api_definition` as the service `api`, and
-`cache` instantiates `cache_definition` as the service `cache`. Both services are included in the project deployment. The API can
+The `api` declaration instantiates `api_definition` as the service `api`,
+running two replicas; `cache` instantiates `cache_definition` as the service
+`cache`. Both services are included in the project deployment. The API can
 reference `cache` because both declarations belong to this package.
 
 The reference names the `cache` service, which gives its volume the
@@ -135,8 +138,8 @@ resolution between services in the same package.
 ## Validation
 
 Local validation checks ownership, included manifests, each file's schema,
-resource names, deployment declarations, and package-local `from`
-references. Composition checks all service names, build-source paths
+resource names, deployment declarations, replica counts, and package-local
+`from` references. Composition checks all service names, build-source paths
 on disk, composed volume names, reference visibility, referenced variables,
 and ungrounded value-reference cycles. Unknown or cross-package service
 references fail locally. At least one deployment is required to produce a
@@ -146,9 +149,9 @@ deployable description.
 
 The generated description is JSON with `kind: deployable` and a `services`
 array. Each entry contains a service name, normalized source declaration,
-environment templates, and runtime configuration. The remote project binding
-lives in `.uniac/deploy.json`, and environment values remain templates until
-deployment.
+environment templates, and runtime configuration, including a declared
+`replicas` count. The remote project binding lives in `.uniac/deploy.json`,
+and environment values remain templates until deployment.
 Build paths are authored relative to the defining manifest's directory and
 normalized relative to the project root in the generated description. Thus
 `build: .` in `api/uniac.yaml` and `jobs/uniac.yaml` describes distinct sources.
@@ -156,7 +159,8 @@ normalized relative to the project root in the generated description. Thus
 The digest identifies that description. Equivalent path spellings, omitted
 build defaults, YAML formatting, and mapping or exposure-list ordering leave it
 unchanged. Reordering workspace includes or moving an identical checkout to
-another absolute path also preserves the digest. An explicit build `target`
-remains part of the description even when it names the Dockerfile's last
-stage. The digest excludes source-file and image contents and remotely
-resolved environment values.
+another absolute path also preserves the digest. A declared `replicas` count
+is part of the description; omitting it and `null` produce the same
+description. An explicit build `target` remains part of the description even
+when it names the Dockerfile's last stage. The digest excludes source-file and
+image contents and remotely resolved environment values.

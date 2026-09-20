@@ -36,6 +36,7 @@ Data that must outlive a replica is written to an attached
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
 | Volume attachment | No | [Durable storage](/resources/volume) for a singleton service. |
+| Replica count | No | 0 to 4 for a stateless service, 0 or 1 for a singleton; a new service runs one. [Deployment versions](#runtime-and-deployment-versions) apply it. |
 | Public exposure | No | [Public endpoints](#public-endpoints) declared with the service's deployment. |
 
 A start command is split into arguments with shell-style quoting, and its
@@ -156,6 +157,9 @@ build fields above. An empty string selects the default root; `build: null`
 is invalid. Each build root is relative to the directory containing its
 definition's `uniac.yaml`.
 
+A deployment declaration's optional `replicas` is an integer. Omitted or
+`null`, the service keeps its current count on deployment.
+
 A deployment declaration's `public_ports` is an optional list of mappings,
 each with `port` and `type`. Its presence has three meanings on deployment:
 
@@ -170,8 +174,8 @@ The `web-code` and `cache-code` resources are definitions, and the `web` and
 `cache`. The `from` field connects each declaration to its definition in this
 package.
 
-The stateless `web` service receives the URL declared by `cache`, which uses
-`cache`'s own internal hostname. The `web` service's port
+The stateless `web` service runs two replicas and receives the URL declared by
+`cache`, which uses `cache`'s own internal hostname. The `web` service's port
 8080 is exposed through HTTPS and a separately allocated raw TCP endpoint. The
 singleton `cache` service starts Redis with append-only persistence on a 1 GB
 volume mounted at `/data`.
@@ -196,6 +200,7 @@ resources:
   web:
     type: deployment
     from: web-code
+    replicas: 2
     public_ports:
       - port: 8080
         type: http
@@ -220,8 +225,10 @@ service, and a service keeps its execution type across versions; a deployment
 that changes the type is rejected.
 
 Each `uniac deploy` creates a new version of every declared service. The new
-version starts with one replica and replaces the running ones; a singleton's
-previous replica stops first.
+version runs the declaration's `replicas` count. Without one, it keeps the
+service's current count, including zero, and a new service starts with one
+replica. The new version replaces the running replicas; a singleton's previous
+replica stops first.
 
 The platform observes container-process liveness and restarts a container
 whose process exits. After five consecutive restarts that each ran for less
@@ -244,6 +251,7 @@ than a minute, the container stays stopped.
 
 A service's dashboard page shows its state, public endpoints, deployment
 activity and resource usage. It sets the replica count (0 to 4 for a stateless
-service, 0 or 1 for a singleton), changes public endpoints, and offers
+service, 0 or 1 for a singleton), which later deployments keep unless their
+declaration sets `replicas`. It also changes public endpoints and offers
 **Delete service**. Its volume's retention and deletion are governed by the
 [volume lifecycle](/resources/volume#lifecycle).
