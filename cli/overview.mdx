@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.21.
+This reference describes release 0.3.22.
 
 ## Invocation
 
@@ -35,10 +35,11 @@ are deleted in the [dashboard](/resources/service#dashboard-and-removal).
 
 ## Local initialization
 
-`init` runs offline and writes one prebuilt-image service definition and a
-private deployment named `main` that instantiates it; `public_ports` adds an
-endpoint. It prompts for a service name, previews the file and asks for
-confirmation; end-of-input accepts the defaults. The default name comes from
+`init` runs offline and writes a prebuilt-image service definition named
+`<name>-definition` and a private deployment declaration `<name>` that
+instantiates it; `public_ports` on the declaration adds an endpoint. It prompts
+for the service name, previews the file and asks for confirmation;
+end-of-input accepts the defaults. The default name comes from
 the directory name, with `app` as the fallback. `init` stops when the
 directory already has a `uniac.yaml`.
 
@@ -112,8 +113,8 @@ from the local description; whole-project status also reads volumes.
 
 `plan` and `deploy` collect every deployment declaration in the resolved
 project's root and included packages, so they always cover the whole project.
-Planning requires at least one declared deployment, and each instance comes
-from a deployment declaration.
+Planning requires at least one deployment declaration, and each service comes
+from one declaration.
 
 `plan` performs [description validation](/composition/yaml#validation) offline
 and needs neither credentials nor Docker. It composes the complete graph and
@@ -141,7 +142,7 @@ filters its input. Builds run on every deployment and use Docker's layer
 cache. The resulting
 image is pushed to the project registry and registered with the service
 description. Sources remain relative to their defining package. Within one
-run, instances sharing a source and target platform share image work;
+run, services sharing a source and target platform share image work;
 different packages' `build: .` sources remain distinct.
 
 Missing build directories or Dockerfiles fail during local planning.

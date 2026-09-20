@@ -28,13 +28,13 @@ description, and the digest of its complete generated description. It then
 shows shared image work under `Building` and named services under
 `Deploying`. Service rows include sources, declared public exposure and
 volumes, grouped by package for a workspace. `--full` adds environment values,
-the start command, deployment declaration, and source definition's name when
-it differs from the service name.
+the start command, and the source definition's name.
 
 `plan --json` emits `{project, digest, deployable, declarations}`. `project`
 contains `root_dir`, `name`, optional `description`, and `packages` with each
 package's relative `path`. The root package is `.`. `declarations` associates
-each concrete `service` with its `package`, `deployment`, and `from` definition.
+each `service` with its `package`, its `deployment` declaration, which has the
+service's name, and its `from` definition.
 `deployable` is the complete generated service description.
 Environment and start-command fields are included whether or not `--full`
 is supplied. [Composition in YAML](/composition/yaml#generated-description) defines the generated
@@ -57,8 +57,8 @@ a report and project or service rows.
 
 ### Per-service release outcomes
 
-Each `release` block identifies the concrete service and its package and
-deployment declaration. It records whether the image was pushed, the
+Each `release` block identifies the service, its package and its deployment
+declaration. It records whether the image was pushed, the
 submission outcome, returned deployment and task IDs, whether service state
 was read, and any failure phase or warnings.
 

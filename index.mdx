@@ -68,16 +68,17 @@ services, endpoints, and every volume and its data, including detached volumes.
 
 A **composition** describes the resources making up an application and how
 they connect. A **service definition** supplies reusable image and runtime
-configuration. A **deployment declaration** instantiates definitions under
-service names in a target project, and a service runs once a declaration
-instantiates its definition. Deploying the project creates or updates the
-service instances from every deployment declaration in its packages. Each
-instance runs the replicas its execution type allows.
+configuration. A **deployment declaration** instantiates one definition as a
+service in a target project, and the declaration's name is the service's
+name. A service runs once a declaration instantiates its definition, and
+several declarations can instantiate the same definition. Deploying the
+project creates or updates the service of every deployment declaration in its
+packages. Each service runs the replicas its execution type allows.
 
 A package is a directory containing a description. Each package keeps its
 own resource and reference scope: workspace inclusion combines the packages'
 deployments, and each package's definitions and environment references stay
-within that package. Concrete service names are unique across the project.
+within that package. Service names are unique across the project.
 
 [Composition in YAML](/composition/yaml) introduces the description file
 and combines these parts in an example. Detailed configuration and lifecycle
