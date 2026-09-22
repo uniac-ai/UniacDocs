@@ -19,8 +19,10 @@ The document is a mapping with these top-level fields:
 | `runtime` | No | Composition format: `yaml`, the default. |
 
 Resource names match `^[a-z0-9]+(?:(?:__?|-+)[a-z0-9]+)*$` and are unique
-within the file. Every resource requires `type`; unknown fields are rejected
-at every level.
+within the file. A deployment declaration's name is also its service's name,
+so it is one DNS label: lowercase letters, digits and dashes, starting and
+ending with a letter or digit, at most 63 characters. Every resource requires
+`type`; unknown fields are rejected at every level.
 
 ## Workspaces and packages
 
@@ -53,12 +55,11 @@ A manifest outside any workspace owns a standalone project. Inside a
 workspace, every manifest below the root is listed in `includes`.
 
 Resource names, `from` lookups and environment references are local to each
-package: a reference addresses instances from any deployment in its own
-package, and the root's resources form their own package. Different packages
-may reuse definition names; the concrete services instantiated across the
-project have unique names.
+package: a reference addresses the services declared in its own package, and
+the root's resources form their own package. Different packages may reuse
+definition names; service names are unique across the project.
 
-## Definitions and service instances
+## Definitions and deployments
 
 `type: service` and `type: singleton` create reusable **service definitions**
 for stateless and singleton execution. A definition holds the OCI image or
@@ -66,28 +67,26 @@ Dockerfile build source, environment, startup command, and storage needs.
 A deployment declaration turns it into a running service. Complete field
 contracts are in [Service](/resources/service) and [Volume](/resources/volume).
 
-A `type: deployment` resource **instantiates** definitions: its `services`
-mapping gives each instance a service name and a definition to instantiate.
-Every declaration contributes its named instances to the project's deployment
-description, and a definition runs through the declarations that name it.
+A `type: deployment` resource **instantiates** one definition as a service.
+The declaration's name is the service's name: its identity in the target
+project and its private hostname. Several declarations can instantiate the
+same definition, each as its own service.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `services` | Yes | Nonempty mapping of instance names to definitions and public exposure. |
-| `services.<instance>.from` | Yes | Name of a `service` or `singleton` definition in this file. |
-| `services.<instance>.public_ports` | No | [Public endpoint declarations](/resources/service#public-endpoints). |
+| `from` | Yes | Name of a `service` or `singleton` definition in this file. |
+| `public_ports` | No | [Public endpoint declarations](/resources/service#public-endpoints). |
 
-The **service instance** is the named remote service, and its replicas are
-the containers running it. Multiple instances can reuse one definition. The
-definition's name is a local label; the instance name supplies the service's
-identity in the target project. An instance name is one DNS label: lowercase
-letters, digits and dashes, starting and ending with a letter or digit, at
-most 63 characters.
+The service's replicas are the containers running it, and each deploy creates
+a new [deployment version](/resources/service#runtime-and-deployment-versions)
+of the service. A definition and a deployment declaration in the same file
+have different names. Renaming a
+declaration names a different service, with its own hostname, reference
+target and volume names; the service deployed under the earlier name, and its
+data, stay in the project.
 
 Deploying a project includes every deployment declaration in its root and
-included packages. A declaration belongs to the description, and each
-resulting service has its own
-[deployment versions](/resources/service#runtime-and-deployment-versions).
+included packages. Each resulting service has its own deployment versions.
 The target project's identity is supplied separately from this file.
 
 ## Example composition
@@ -112,38 +111,33 @@ resources:
       - name: data
         size_gb: 1
         mount_path: /data
-  api-deployment:
+  api:
     type: deployment
-    services:
-      api:
-        from: api_definition
-        public_ports: [{port: 8080, type: http}]
-  cache-deployment:
+    from: api_definition
+    public_ports: [{port: 8080, type: http}]
+  cache:
     type: deployment
-    services:
-      cache:
-        from: cache_definition
-        public_ports: []
+    from: cache_definition
+    public_ports: []
 ```
 
-`api-deployment` instantiates `api_definition` as the service `api`;
-`cache-deployment` instantiates `cache_definition` as `cache`. Both services
-are included in the project deployment. The API can reference `cache`
-because both declarations belong to this package.
+The `api` declaration instantiates `api_definition` as the service `api`, and
+`cache` instantiates `cache_definition` as the service `cache`. Both services are included in the project deployment. The API can
+reference `cache` because both declarations belong to this package.
 
-The reference names the `cache` instance, and that instance gives its volume
-the project-scoped name `cache.data`. The API is publicly exposed; Redis is
+The reference names the `cache` service, which gives its volume the
+project-scoped name `cache.data`. The API is publicly exposed; Redis is
 reachable within the project's private network.
 
 [Environment and references](/resources/service#environment-and-references) explains
-resolution between service instances in the same package.
+resolution between services in the same package.
 
 ## Validation
 
 Local validation checks ownership, included manifests, each file's schema,
-resource names, service declarations, and package-local `from` references.
-Composition checks all instantiated service names, build-source paths on
-disk, composed volume names, reference visibility, referenced variables,
+resource names, deployment declarations, and package-local `from`
+references. Composition checks all service names, build-source paths
+on disk, composed volume names, reference visibility, referenced variables,
 and ungrounded value-reference cycles. Unknown or cross-package service
 references fail locally. At least one deployment is required to produce a
 deployable description.
@@ -151,7 +145,7 @@ deployable description.
 ## Generated description
 
 The generated description is JSON with `kind: deployable` and a `services`
-array. Each entry contains an instance name, normalized source declaration,
+array. Each entry contains a service name, normalized source declaration,
 environment templates, and runtime configuration. The remote project binding
 lives in `.uniac/deploy.json`, and environment values remain templates until
 deployment.

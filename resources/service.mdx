@@ -10,16 +10,16 @@ the application and its runtime dependencies. The image can be supplied
 directly or built from a Dockerfile. Uniac adds no SDK or runtime dependency
 to the application.
 
-## Definitions and instances
+## Definitions and deployments
 
 A **service definition** supplies reusable image and runtime configuration.
-A **deployment declaration** instantiates it under a service name in the
-target project, which creates the remote service. Deploying the project
-includes the instances from every deployment declaration.
+A **deployment declaration** instantiates it as a service in the target
+project, named by the declaration. Several declarations can instantiate one
+definition, each as its own service. Deploying the project includes the
+service of every deployment declaration.
 
-A **service instance** is the named remote service; its **replicas** are the
-running containers. Its identity persists across replica replacements and
-deployment versions.
+A service's **replicas** are its running containers. Its identity persists
+across replica replacements and deployment versions.
 
 Stateless services can run multiple container replicas behind the same
 service identity. A singleton service runs at most one replica at a time:
@@ -36,7 +36,7 @@ Data that must outlive a replica is written to an attached
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
 | Volume attachment | No | [Durable storage](/resources/volume) for a singleton service. |
-| Public exposure | No | [Public endpoints](#public-endpoints) on a service instance. |
+| Public exposure | No | [Public endpoints](#public-endpoints) declared with the service's deployment. |
 
 A start command is split into arguments with shell-style quoting, and its
 first argument is executed directly.
@@ -60,7 +60,7 @@ build context stays within that package.
 
 ## Networking and endpoints
 
-Services are addressable as `<instance>.internal` within their project, and
+Services are addressable as `<service>.internal` within their project, and
 internal communication needs no port declarations. A service is private to its
 project until it declares a public endpoint.
 
@@ -71,8 +71,8 @@ port. An application that reads `PORT` gets it from a declared
 ### Public endpoints
 
 A public endpoint forwards incoming traffic to the application's listen port.
-Endpoints are declared on the service instance, independently of its reusable
-definition.
+Endpoints are declared with the service's deployment declaration,
+independently of its reusable definition.
 
 | Type | Allocated endpoint |
 |---|---|
@@ -109,8 +109,8 @@ serving deployment's values. Changing a value deploys a new version.
 
 ### References
 
-A reference's scope names a service instance, independently of its
-definition name. `${{self.VAR}}` names a variable on the declaring service.
+A reference's scope names a service, independently of its definition
+name. `${{self.VAR}}` names a variable on the declaring service.
 The one builtin, `host`, is the referenced service's internal hostname.
 
 References have this grammar:
@@ -126,8 +126,8 @@ reference.
 ### Resolution
 
 References to `self` must name a builtin or a declared variable. Composition
-checks other instances across all deployment declarations in the package
-against their declared variables and builtins. Unknown names, cross-package
+checks references to the other services declared in the package against their
+declared variables and builtins. Unknown names, cross-package
 references, and ungrounded value-reference cycles fail locally.
 
 Remote references use services with a serving deployment. For those services,
@@ -156,8 +156,8 @@ build fields above. An empty string selects the default root; `build: null`
 is invalid. Each build root is relative to the directory containing its
 definition's `uniac.yaml`.
 
-`services.<instance>.public_ports` is an optional list of mappings, each with
-`port` and `type`. Its presence has three meanings on deployment:
+A deployment declaration's `public_ports` is an optional list of mappings,
+each with `port` and `type`. Its presence has three meanings on deployment:
 
 | Value | Result |
 |---|---|
@@ -165,14 +165,16 @@ definition's `uniac.yaml`.
 | `[]` | Removes all public exposure. |
 | Nonempty list | Replaces public exposure with exactly this list. |
 
-The `web-code` and `cache-code` resources are definitions. The project deploys
-both `web` from `web-deployment` and `cache` from `cache-deployment`. The
-`from` field connects each instance to its definition in this package.
+The `web-code` and `cache-code` resources are definitions, and the `web` and
+`cache` deployment declarations instantiate them as the services `web` and
+`cache`. The `from` field connects each declaration to its definition in this
+package.
 
 The stateless `web` service receives the URL declared by `cache`, which uses
-`cache`'s own internal hostname. The `web` service's port 8080 is exposed through
-HTTPS and a separately allocated raw TCP endpoint. The singleton `cache` service starts
-Redis with append-only persistence on a 1 GB volume mounted at `/data`.
+`cache`'s own internal hostname. The `web` service's port
+8080 is exposed through HTTPS and a separately allocated raw TCP endpoint. The
+singleton `cache` service starts Redis with append-only persistence on a 1 GB
+volume mounted at `/data`.
 
 ```yaml
 resources:
@@ -191,22 +193,18 @@ resources:
       - name: data
         size_gb: 1
         mount_path: /data
-  web-deployment:
+  web:
     type: deployment
-    services:
-      web:
-        from: web-code
-        public_ports:
-          - port: 8080
-            type: http
-          - port: 8080
-            type: tcp
-  cache-deployment:
+    from: web-code
+    public_ports:
+      - port: 8080
+        type: http
+      - port: 8080
+        type: tcp
+  cache:
     type: deployment
-    services:
-      cache:
-        from: cache-code
-        public_ports: []
+    from: cache-code
+    public_ports: []
 ```
 
 The generated description uses `container.source.ref` for `image` and
@@ -217,9 +215,9 @@ their defaults; an all-defaults build is `{}`.
 ## Runtime and deployment versions
 
 In live state, a deployment is a version of one service, with its own
-lifecycle and running containers. Redeploying an existing instance updates
-that service, and a service keeps its execution type across versions; a
-deployment that changes the type is rejected.
+lifecycle and running containers. Redeploying a declaration updates its
+service, and a service keeps its execution type across versions; a deployment
+that changes the type is rejected.
 
 Each `uniac deploy` creates a new version of every declared service. The new
 version starts with one replica and replaces the running ones; a singleton's

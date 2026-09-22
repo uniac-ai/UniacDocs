@@ -17,8 +17,9 @@ A singleton service can attach one volume. An attachment requires:
 | `size_gb` | Yes | Size in GB when the volume is created: a number from 1 to 4096 after truncation toward zero. Later deployments declare the same size, as [Lifecycle](#lifecycle) describes. |
 | `mount_path` | Yes | Absolute path other than `/`, with no `.` or `..` segments, repeated slashes, or trailing slash. |
 
-The resulting project-scoped name is `<instance>.<name>`, up to 127
-characters.
+The resulting project-scoped name is `<service>.<name>`, up to 127
+characters, where `<service>` is the name of the deployment declaration that
+instantiates the definition.
 
 At deployment, the platform also checks that mount paths lie outside `/proc`,
 `/sys` and `/dev` and differ from `/etc/resolv.conf`.
@@ -44,11 +45,9 @@ resources:
       - name: data
         size_gb: 1
         mount_path: /data
-  application:
+  cache:
     type: deployment
-    services:
-      cache:
-        from: cache-code
+    from: cache-code
 ```
 
 In the generated description, the declaration is one `volume` object with

@@ -20,15 +20,14 @@ resources:
   api_definition:
     type: service
     build: .
-  main:
+  api:
     type: deployment
-    services:
-      api:
-        from: api_definition
-        public_ports: [{ port: 8080, type: http }]
+    from: api_definition
+    public_ports: [{ port: 8080, type: http }]
 ```
 
-The `main` deployment instantiates `api_definition` as the service `api`.
+The `api` deployment declaration instantiates `api_definition` as the service
+`api`.
 [Composition in YAML](/composition/yaml)
 describes the file format and instantiation rules.
 
