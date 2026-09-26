@@ -32,7 +32,7 @@ Data that must outlive a replica is written to an attached
 | Information | Required | Meaning |
 |---|---|---|
 | Execution type | Yes | Stateless or singleton. |
-| Container source | Exactly one | An OCI image reference or a Dockerfile build source. |
+| Container source | Exactly one | An OCI image reference or a Dockerfile build source. The image platform is `linux/amd64`: a referenced image provides it, and a build targets it. |
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
 | Volume attachment | No | [Durable storage](/resources/volume) for a singleton service. |
@@ -226,7 +226,8 @@ that changes the type is rejected.
 
 Each `uniac deploy` creates a new version of every declared service. The new
 version runs the declaration's `replicas` count. Without one, it keeps the
-service's current count, including zero, and a new service starts with one
+requested count of the serving version, or of the newest `active` version
+when none is serving, including zero; a service with neither starts with one
 replica. The new version replaces the running replicas; a singleton's previous
 replica stops first.
 

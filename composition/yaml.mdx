@@ -63,7 +63,8 @@ definition names; service names are unique across the project.
 
 `type: service` and `type: singleton` create reusable **service definitions**
 for stateless and singleton execution. A definition holds the OCI image or
-Dockerfile build source, environment, startup command, and storage needs.
+Dockerfile build source, environment, startup command, and storage needs. The
+image platform is `linux/amd64`.
 A deployment declaration turns it into a running service. Complete field
 contracts are in [Service](/resources/service) and [Volume](/resources/volume).
 
