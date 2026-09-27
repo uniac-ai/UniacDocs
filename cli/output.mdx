@@ -142,8 +142,8 @@ The following exit codes apply to `deploy` and `status`:
 |---|---|---|
 | 0 | — | The command succeeded. |
 | 2 | `usage` | Invalid invocation; no deployment attempted and no code printed on stdout. |
-| 3 | `auth` | No locally usable credential, platform/project API HTTP 401, or `status` has no project name. |
-| 4 | `not_linked` | Missing binding after credential selection, project absent or mismatched with the binding, binding/platform conflict, or deployment's picker found no projects. |
+| 3 | `auth` | No locally usable credential, or platform/project API HTTP 401. |
+| 4 | `not_linked` | Missing binding after credential selection, project absent or mismatched with the binding, `UNIAC_PROJECT_URL` naming no project on the account, binding/platform conflict, or deployment's picker found no projects. |
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
@@ -156,8 +156,7 @@ These two commands use the codes above. Some conditions use a code whose name
 describes only part of the cause:
 
 - `status` without a binding or target override exits 4 when a credential is
-  available; without a usable credential it exits 3. A target with no project
-  name, including `UNIAC_PROJECT_URL`, exits 3.
+  available; without a usable credential it exits 3.
 - Deployment's project picker reports unanswered-input failures as 70;
   no projects produces 4.
 - Missing build directories or Dockerfiles produce 5 during planning;

@@ -139,10 +139,11 @@ resolution between services in the same package.
 ## Validation
 
 Local validation checks ownership, included manifests, each file's schema,
-resource names, deployment declarations, replica counts, and package-local
-`from` references. Composition checks all service names, build-source paths
-on disk, composed volume names, reference visibility, referenced variables,
-and ungrounded value-reference cycles. Unknown or cross-package service
+resource names, deployment declarations, replica counts, endpoint ports,
+volume sizes and mount paths, environment variable counts and lengths, and
+package-local `from` references. Composition checks all service names,
+build-source paths on disk, composed volume names, reference visibility,
+referenced variables, and ungrounded value-reference cycles. Unknown or cross-package service
 references fail locally. At least one deployment is required to produce a
 deployable description.
 

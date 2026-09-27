@@ -88,8 +88,6 @@ Public exposure is optional. Each requested endpoint specifies:
 | `type` | Yes | `http` or `tcp`. |
 
 Each service can have one `http` and one `tcp` endpoint, on ports 1–65535.
-The platform checks these values when the deployment is submitted, in
-addition to local schema validation.
 
 ## Environment and references
 
@@ -102,8 +100,8 @@ defaults are the image's own.
 Environment configuration is optional. Each declared variable requires a
 name and a plaintext string value, optionally containing references. Names
 match `^[A-Za-z_][A-Za-z0-9_]*$`; `host` is reserved for the builtin reference.
-At deployment, the platform accepts at most 64 declared variables, with names
-up to 128 characters and values up to 4096 characters.
+A service accepts at most 64 declared variables, with names up to 128
+characters and values up to 4096 characters.
 
 Declared values are stored with the deployment, and the dashboard shows the
 serving deployment's values. Changing a value deploys a new version.

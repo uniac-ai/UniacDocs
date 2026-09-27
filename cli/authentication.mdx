@@ -30,10 +30,14 @@ localhost port and waits up to five minutes. The default platform uses
 `uniac.ai` for sign-in. Another platform takes its sign-in website from
 `--host` or `UNIAC_AUTH_HOST`.
 
-Successful sign-in stores the returned token in `~/.uniac/auth.json`, with
-file permissions `0600`. There is one stored session per platform; signing
-in replaces that platform's session and preserves the others. The CLI stores
-the token as sign-in returns it, and deployment checks it with the platform.
+A platform accepts only tokens from its own sign-in website. `login` checks
+the returned token with the platform it signs in to, through the account-level
+project listing. When that platform rejects the token, login fails and the
+stored session is unchanged. Otherwise login stores the token in
+`~/.uniac/auth.json`, with file permissions `0600`, and reports whether the
+platform accepted it or gave no answer. There is one stored session per
+platform; signing in replaces that platform's session and preserves the
+others. The CLI stores the token as sign-in returns it.
 
 ## Credential selection and renewal
 
@@ -46,8 +50,8 @@ before its recorded expiry, and deployment needs a usable credential before
 its first network call.
 
 Deployment checks the selected credential with the platform before image
-work and uses that credential throughout the operation. `auth status` and
-`auth token` read the local sessions only.
+work and uses that credential throughout the operation. `auth token` reads the
+local sessions only.
 
 A stored token is used until it expires. `uniac auth login` stores the token
 that sign-in returns, with the expiry sign-in sets.
@@ -56,16 +60,17 @@ that sign-in returns, with the expiry sign-in sets.
 
 | Invocation | Result |
 |---|---|
-| `uniac auth status` | Print stored identities and expiry times for every platform, including expired sessions; fail when none are stored. |
+| `uniac auth status` | Print each stored session's platform, token issuer, identity and expiry time, and whether that platform accepts it; an expired session is listed without a check. Fail when none are stored or a platform rejects its session. |
 | `uniac auth token` | Print the selected credential; fail when none is locally usable. |
 | `uniac auth logout` | Remove all locally stored platform sessions. |
 
-`auth status`'s `Logged in.` message reports stored sessions; commands that use
-credentials read `UNIAC_ACCESS_TOKEN` themselves. Logout removes the stored
+`auth status` checks the stored sessions and prints `Logged in.` when no
+platform rejects its session; commands that use credentials read
+`UNIAC_ACCESS_TOKEN` themselves. Logout removes the stored
 sessions from this machine, and issued tokens stay valid at the platform until
 they expire.
 
 `uniac auth -h` lists subcommands; each subcommand's `-h` prints its usage.
 `status`, `token` and `logout` take no flags or arguments. Help and invalid
-invocations leave sessions unchanged, and `login` is the subcommand that uses
-the network.
+invocations leave sessions unchanged, and `login` and `status` are the
+subcommands that use the network.

@@ -15,14 +15,11 @@ A singleton service can attach one volume. An attachment requires:
 |---|---|---|
 | `name` | Yes | Local volume name matching `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`. |
 | `size_gb` | Yes | Size in GB when the volume is created: a number from 1 to 4096 after truncation toward zero. Later deployments declare the same size, as [Lifecycle](#lifecycle) describes. |
-| `mount_path` | Yes | Absolute path other than `/`, with no `.` or `..` segments, repeated slashes, or trailing slash. |
+| `mount_path` | Yes | Absolute path other than `/`, with no `.` or `..` segments, repeated slashes, or trailing slash, outside `/proc`, `/sys` and `/dev`, and other than `/etc/resolv.conf`. |
 
 The resulting project-scoped name is `<service>.<name>`, up to 127
 characters, where `<service>` is the name of the deployment declaration that
 instantiates the definition.
-
-At deployment, the platform also checks that mount paths lie outside `/proc`,
-`/sys` and `/dev` and differ from `/etc/resolv.conf`.
 
 ## YAML composition example
 
