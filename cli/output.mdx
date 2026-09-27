@@ -8,9 +8,10 @@ description: "deploy prints one final text report to stdout, containing its exec
 
 `deploy` prints one final text report to stdout, containing its execution
 record followed by the state it could report. `status` prints the state and,
-if its read fails, an error block. Both reports are text; `plan --json` is the
-JSON output. Help and argument-parsing errors go to stderr and leave stdout
-empty.
+if its read fails, an error block. `service delete` and `volume delete` print
+their outcome or the same error block, and ask their confirmation question on
+stderr. These reports are text; `plan --json` is the JSON output. Help and
+argument-parsing errors go to stderr and leave stdout empty.
 
 Deployment progress uses stderr. By default, a terminal with usable width
 gets a live display that clears when the run ends. `UNIAC_PROGRESS=1` streams
@@ -129,6 +130,20 @@ release outcomes only.
 Platform warnings are passed through, including unresolved
 [environment references](/resources/service#environment-and-references).
 
+## Deletion output
+
+A successful `service delete` prints its first line below, and the second for
+a volume the service held; a successful `volume delete` prints the third:
+
+```text
+Deleted service <name> from project <project>.
+Volume <volume> is detached and keeps its data; `uniac volume delete <volume>` destroys it.
+Deleted volume <name> and its data from project <project>.
+```
+
+When the platform differs from production, `on <platform-url>` follows the
+project name. A failure prints the error block below.
+
 ## Errors and exit codes
 
 A `status` error block contains `error <code>`, a human-readable `message`
@@ -136,23 +151,24 @@ and `retryable yes` when reported. Deployment puts the code on the root line
 and annotates a retryable failure there. `retryable` means the same operation
 may succeed without changes; error messages are explanatory prose.
 
-The following exit codes apply to `deploy` and `status`:
+The following exit codes apply to `deploy`, `status`, `service delete` and
+`volume delete`:
 
 | Exit | Code | Condition |
 |---|---|---|
 | 0 | — | The command succeeded. |
-| 2 | `usage` | Invalid invocation; no deployment attempted and no code printed on stdout. |
+| 2 | `usage` | Invalid invocation, a delete without `--silent` and without a terminal, or a typed name that does not match; nothing is deployed or deleted and no code is printed on stdout. |
 | 3 | `auth` | No locally usable credential, or platform/project API HTTP 401. |
 | 4 | `not_linked` | Missing binding after credential selection, project absent or mismatched with the binding, `UNIAC_PROJECT_URL` naming no project on the account, binding/platform conflict, or deployment's picker found no projects. |
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry or a refused platform read. |
+| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry, a refused platform read, a delete the platform refuses (including a missing service or volume and a held volume), or a service deletion still running at the deadline. |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
 | 10 | `pending` | Reserved. |
 | 70 | `internal` | Unclassified failure. |
 
-These two commands use the codes above. Some conditions use a code whose name
+These commands use the codes above. Some conditions use a code whose name
 describes only part of the cause:
 
 - `status` without a binding or target override exits 4 when a credential is

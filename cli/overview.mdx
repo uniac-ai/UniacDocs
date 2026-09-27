@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.23.
+This reference describes release 0.3.24.
 
 ## Invocation
 
@@ -26,11 +26,13 @@ usage.
 | `uniac link [-C <path>] [name-or-slug]` | Create or replace the owning project's remote binding. |
 | `uniac deploy [--dir <path>]` | Build and deploy every declaration in the owning project. |
 | `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
+| `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
+| `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac auth <login\|status\|token\|logout>` | Manage [authentication](/cli/authentication). |
 | `uniac version` | Print the installed binary's version, commit and build time. |
 
-`--version` and `-v` are aliases for `version`. Services, volumes and projects
-are deleted in the [dashboard](/resources/service#dashboard-and-removal).
+`--version` and `-v` are aliases for `version`. Projects are deleted in the
+[dashboard](/#project-lifetime).
 [Output](/cli/output) describes result formats, progress and exit codes.
 
 ## Local initialization
@@ -95,7 +97,8 @@ operations. Each operation captures its destination when it starts, so a
 concurrent relink applies to later operations. Relinking changes where later
 commands deploy; remote services stay where they are.
 
-`deploy` and `status` select their destination as follows:
+`deploy`, `status` and the [delete commands](#deleting-services-and-volumes)
+select their destination as follows:
 
 - A nonempty `UNIAC_PROJECT_URL` names a project by its gateway URL or slug,
   in place of the binding, and the platform origin comes from
@@ -107,7 +110,8 @@ commands deploy; remote services stay where they are.
   binding without `platform_url` uses the selected default platform; one
   without `gateway_url` derives the gateway from its slug.
 - Without a binding or override, `deploy` opens the project picker and saves
-  the selected binding, and `status` reports that the project is not linked.
+  the selected binding; `status` and the delete commands report that the
+  project is not linked.
 
 `status` reads the project that the binding or `UNIAC_PROJECT_URL` names.
 It reads every service in the project, including services missing
@@ -157,11 +161,15 @@ endpoint, environment variable and volume limits that the
 [storage](/resources/volume) pages state, and the platform applies those
 pages' constraints when the deployment is submitted.
 
-All service images are checked before the first push. The CLI registers every
-service before waiting for any deployment to settle. Each run submits a new
+All service images are checked before the first push. Each run submits a new
 [deployment version](/resources/service#runtime-and-deployment-versions) of
-every declared service, and references between services deployed in the same
-run [resolve](/resources/service#resolution) on the next run.
+every declared service, in reference order: a service whose environment
+[references](/resources/service#resolution) another declared service is
+registered after that service's deployment has settled, so the reference
+resolves to the version the same run declared. Services with no reference
+between them are registered together before the CLI waits for any of them.
+Services that reference each other in a cycle are registered together, and
+each resolves the others against the versions serving at that moment.
 
 When registration returns a task ID and the initial task read succeeds, the
 CLI polls every two seconds until the task
@@ -169,13 +177,33 @@ finishes or a five-minute observation deadline passes. Authentication or
 access denial fails the command. In other cases, the report shows the accepted
 registration without an observed state.
 
-Failure or interruption stops new local work and returns partial results.
-Deployments the platform accepted continue, each on its own. An interrupted or
-lost registration response leaves acceptance unconfirmed. A later deploy is a
-new, independent operation.
+Failure or interruption stops new local work and returns partial results:
+when a deployment fails to settle, the services registered after it are not
+attempted. Deployments the platform accepted continue, each on its own. An
+interrupted or lost registration response leaves acceptance unconfirmed. A
+later deploy is a new, independent operation.
 
 After a release attempt, including a partial failure, the CLI writes a local
 record of image digests, submission outcomes and receipts under
 `~/.uniac/store`; `UNIAC_STORE_DIR` selects another directory.
 [Output](/cli/output#partial-observations-and-warnings) describes recording
 failures.
+
+## Deleting services and volumes
+
+`service delete <name>` deletes a service of the linked project, with the
+effects in [Dashboard and removal](/resources/service#dashboard-and-removal):
+a volume it holds is detached and keeps its data. The command then polls every
+two seconds until the service is gone, up to a five-minute deadline; the
+deletion continues after the deadline or an interruption.
+
+`volume delete <name>` deletes a volume and its data. `<name>` is the volume's
+full name as `status` lists it, `<service>.<volume>`. The volume must be
+[unattached](/resources/volume#lifecycle).
+
+In a terminal, both commands show what they delete and ask for its typed
+name; any other answer deletes nothing and exits 2. `--silent` skips the
+question and changes nothing else. Without a terminal on standard input,
+`--silent` is required, and the command exits 2 before any network call. Both
+commands select the project as `status` does and use its platform's
+credentials. [Output](/cli/output#deletion-output) describes their results.
