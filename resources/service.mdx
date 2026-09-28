@@ -138,9 +138,7 @@ A reference resolves when the declaring service's deployment is created,
 against the services serving at that moment, and the resolved values stay with
 that deployment. A service picks up a new or changed value from another
 service on its own next deployment. A variable whose referenced service starts
-serving later is omitted with a warning and filled in by that next deployment;
-on a project's first `uniac deploy`, the next `uniac deploy` fills in
-references between services deployed in the same run.
+serving later is omitted with a warning and filled in by that next deployment.
 
 ## YAML composition example
 
@@ -252,5 +250,10 @@ A service's dashboard page shows its state, public endpoints, deployment
 activity and resource usage. It sets the replica count (0 to 4 for a stateless
 service, 0 or 1 for a singleton), which later deployments keep unless their
 declaration sets `replicas`. It also changes public endpoints and offers
-**Delete service**. Its volume's retention and deletion are governed by the
-[volume lifecycle](/resources/volume#lifecycle).
+**Delete service**, confirmed by typing the service's name.
+
+Deleting a service stops its replicas and removes its deployments, images and
+public endpoints. The service reports `terminating` until the removal
+completes, and is then gone. Its volume is detached and keeps its data; the
+[volume lifecycle](/resources/volume#lifecycle) governs its retention and
+deletion.
