@@ -80,7 +80,7 @@ of the running service. Releasing again starts a new operation.
 Service state is explained in
 [Service observation](/resources/service#observed-state), public
 addresses in [Networking](/resources/service#networking-and-endpoints), and durable
-storage state in [Volume lifecycle](/resources/volume#lifecycle).
+storage state in [Volume states](/resources/volume#states).
 
 | Row | Representation |
 |---|---|
@@ -88,7 +88,7 @@ storage state in [Volume lifecycle](/resources/volume#lifecycle).
 | `platform` | The platform API origin, shown only when it differs from production. |
 | `root` | The resolved local project directory, included in deployment reports. |
 | `service` | A service name, followed by `v<N>` when a serving version was read. |
-| `status` | Reported status, followed by the `(observed/effective)` replica counts. |
+| `status` | Reported status, followed by the `(observed/effective)` replica counts when the observed count is reported. |
 | `kind` | Reported service kind, omitted when unavailable. |
 | `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
 | `deploying` | The in-flight task state and its current step when reported. |
@@ -103,10 +103,11 @@ includes its allocated public port; the number after `→` is the container
 port. Columns align within each block, so their character offsets vary.
 
 Whole-project `status` lists services in name order and adds project volume
-blocks after them. Each volume block has its name, `size` in GB and `state`,
-including the holding service when available. `deploy` and single-service
-`status` show service mounts; whole-project `status` also lists unattached
-volumes.
+blocks after them. Each volume block has its name, `size` in GB and `state`:
+`bound to <service>`, `available (no service is bound; data intact)`, or
+`provisioning`, `releasing` or `deleting`. `deploy` and single-service
+`status` show service mounts; whole-project `status` also lists volumes no
+service is bound to.
 
 ### Partial observations and warnings
 
@@ -133,11 +134,11 @@ Platform warnings are passed through, including unresolved
 ## Deletion output
 
 A successful `service delete` prints its first line below, and the second for
-a volume the service held; a successful `volume delete` prints the third:
+a volume bound to the service; a successful `volume delete` prints the third:
 
 ```text
 Deleted service <name> from project <project>.
-Volume <volume> is detached and keeps its data; `uniac volume delete <volume>` destroys it.
+Volume <volume> is unbound and keeps its data; `uniac volume delete <volume>` destroys it.
 Deleted volume <name> and its data from project <project>.
 ```
 
@@ -163,7 +164,7 @@ The following exit codes apply to `deploy`, `status`, `service delete` and
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry, a refused platform read, a delete the platform refuses (including a missing service or volume and a held volume), or a service deletion still running at the deadline. |
+| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to), or a service or volume deletion still running at the deadline. |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
 | 10 | `pending` | Reserved. |
 | 70 | `internal` | Unclassified failure. |

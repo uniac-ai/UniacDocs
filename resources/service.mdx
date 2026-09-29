@@ -24,8 +24,8 @@ across replica replacements and deployment versions.
 Stateless services can run multiple container replicas behind the same
 service identity. A singleton service runs at most one replica at a time:
 during replacement, the previous replica stops before its successor starts.
-Data that must outlive a replica is written to an attached
-[volume](/resources/volume).
+Data that must outlive a replica is written to a
+[volume](/resources/volume) bound to the service.
 
 ## Required and optional configuration
 
@@ -35,7 +35,7 @@ Data that must outlive a replica is written to an attached
 | Container source | Exactly one | An OCI image reference or a Dockerfile build source. The image platform is `linux/amd64`: a referenced image provides it, and a build targets it. |
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
-| Volume attachment | No | [Durable storage](/resources/volume) for a singleton service. |
+| Volume | No | [Durable storage](/resources/volume) for a singleton service. |
 | Replica count | No | 0 to 4 for a stateless service, 0 or 1 for a singleton; a new service runs one. [Deployment versions](#runtime-and-deployment-versions) apply it. |
 | Public exposure | No | [Public endpoints](#public-endpoints) declared with the service's deployment. |
 
@@ -239,7 +239,7 @@ than a minute, the container stays stopped.
 | Lifecycle | The deployment's phase: `preparing`, `active`, `retiring`, or `retired`. |
 | Requested replicas | The requested container count. |
 | Effective replicas | The container count after platform policy is applied. |
-| Observed replicas | The running container count the platform reports. |
+| Observed replicas | The number of replicas whose container is running; unreported while the platform cannot observe one of the replicas. |
 | Deployment task | A deployment operation in flight, with its own state and current step. |
 | Hold | A platform-side reason the service is not converging. |
 | Warning | A non-fatal condition reported by the platform. |
@@ -254,6 +254,6 @@ declaration sets `replicas`. It also changes public endpoints and offers
 
 Deleting a service stops its replicas and removes its deployments, images and
 public endpoints. The service reports `terminating` until the removal
-completes, and is then gone. Its volume is detached and keeps its data; the
+completes, and is then gone. Its volume is unbound and keeps its data; the
 [volume lifecycle](/resources/volume#lifecycle) governs its retention and
 deletion.
