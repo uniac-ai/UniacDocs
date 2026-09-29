@@ -172,8 +172,9 @@ Services that reference each other in a cycle are registered together, and
 each resolves the others against the versions serving at that moment.
 
 When registration returns a task ID and the initial task read succeeds, the
-CLI polls every two seconds until the task
-finishes or a five-minute observation deadline passes. Authentication or
+CLI polls every two seconds until the task finishes, when the deployment
+[succeeds or fails](/resources/service#runtime-and-deployment-versions), or a
+five-minute observation deadline passes. Authentication or
 access denial fails the command. In other cases, the report shows the accepted
 registration without an observed state.
 

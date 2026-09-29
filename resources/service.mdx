@@ -227,9 +227,33 @@ when none is serving, including zero; a service with neither starts with one
 replica. The new version replaces the running replicas; a singleton's previous
 replica stops first.
 
-The platform observes container-process liveness and restarts a container
-whose process exits. After five consecutive restarts that each ran for less
-than a minute, the container stays stopped.
+A deployment succeeds once the platform has started the new version's
+containers and stopped and removed the previous versions' containers. It does
+not judge how the application runs: a container that exits after it starts
+does not fail the deployment, and its [instance](#instances) status shows the
+exit. A deployment whose container cannot be started fails. A deployment to
+zero replicas completes once the previous containers are removed.
+
+### Instances
+
+Each replica runs as an instance. An instance is `healthy` while its
+container's process runs, and it receives new connections only while it is
+healthy; connections that arrive before the application listens on its port
+are refused. The platform restarts a container whose process exits, and the
+instance is `unhealthy` until the process runs again. After five consecutive
+restarts that each ran for less than a minute, the container stays stopped
+and the instance is `failed`.
+
+| Status | Meaning |
+|---|---|
+| `starting` | The replica is waiting for placement, or its container is starting. |
+| `healthy` | The container has started and its process runs. |
+| `unhealthy` | The container has started and its process is not running, such as between restarts. |
+| `failed` | The container could not start, or stays stopped after repeated exits. |
+| `terminating` | The replica is being stopped. |
+| `unknown` | The platform cannot observe the instance at the moment. |
+
+An instance also reports when its container started.
 
 ### Observed state
 
@@ -239,7 +263,8 @@ than a minute, the container stays stopped.
 | Lifecycle | The deployment's phase: `preparing`, `active`, `retiring`, or `retired`. |
 | Requested replicas | The requested container count. |
 | Effective replicas | The container count after platform policy is applied. |
-| Observed replicas | The number of replicas whose container is running; unreported while the platform cannot observe one of the replicas. |
+| Observed replicas | The number of instances that are `healthy` or `unhealthy`; unreported while the platform cannot observe one of the replicas. |
+| Instances | Each replica's [instance](#instances) status and start time. |
 | Deployment task | A deployment operation in flight, with its own state and current step. |
 | Hold | A platform-side reason the service is not converging. |
 | Warning | A non-fatal condition reported by the platform. |

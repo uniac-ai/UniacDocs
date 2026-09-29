@@ -98,6 +98,10 @@ storage state in [Volume states](/resources/volume#states).
 | `hold` | A platform hold code. |
 | `warning` | A platform warning or a CLI observation/recording warning. |
 
+A service block also lists each of the service's instances with its
+[status](/resources/service#instances) and start time, after a deployment and
+in `status`.
+
 The endpoint address is the complete address a client uses. A TCP address
 includes its allocated public port; the number after `→` is the container
 port. Columns align within each block, so their character offsets vary.
