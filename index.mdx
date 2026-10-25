@@ -43,9 +43,9 @@ service's volume a single writer. Both service kinds keep their network
 identity across replacement.
 
 A volume supplies durable storage that survives replacement of the container
-using it. A singleton service can attach a volume, and data that must outlive
-a replica is written to its mount. The volume has its own identity and
-lifetime within the project, and its data stays when it is detached or its
+using it. A singleton service can be bound to a volume, and data that must
+outlive a replica is written to its mount. The volume has its own identity and
+lifetime within the project, and its data stays when it is unbound or its
 service is deleted.
 
 For example, an application can have a stateless API and a singleton database.
@@ -62,7 +62,7 @@ declaration leaves the description.
 The [dashboard](https://uniac.ai) opens an account's projects and their
 services without a local application description. A project's **Settings**
 offers **Delete project**, confirmed by typing its name. Deletion destroys its
-services, endpoints, and every volume and its data, including detached volumes.
+services, endpoints, and every volume and its data, including unbound volumes.
 
 ## Describing the application
 

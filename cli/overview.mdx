@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.24.
+This reference describes release 0.3.25.
 
 ## Invocation
 
@@ -172,8 +172,9 @@ Services that reference each other in a cycle are registered together, and
 each resolves the others against the versions serving at that moment.
 
 When registration returns a task ID and the initial task read succeeds, the
-CLI polls every two seconds until the task
-finishes or a five-minute observation deadline passes. Authentication or
+CLI polls every two seconds until the task finishes, when the deployment
+[succeeds or fails](/resources/service#runtime-and-deployment-versions), or a
+five-minute observation deadline passes. Authentication or
 access denial fails the command. In other cases, the report shows the accepted
 registration without an observed state.
 
@@ -193,13 +194,17 @@ failures.
 
 `service delete <name>` deletes a service of the linked project, with the
 effects in [Dashboard and removal](/resources/service#dashboard-and-removal):
-a volume it holds is detached and keeps its data. The command then polls every
-two seconds until the service is gone, up to a five-minute deadline; the
-deletion continues after the deadline or an interruption.
+a volume bound to it is unbound and keeps its data.
 
-`volume delete <name>` deletes a volume and its data. `<name>` is the volume's
-full name as `status` lists it, `<service>.<volume>`. The volume must be
-[unattached](/resources/volume#lifecycle).
+`volume delete <name>` deletes a volume and its data, with the effects in
+[Volume lifecycle](/resources/volume#lifecycle): a volume a service is bound
+to is refused. `<name>` is the volume's full name as `status` lists it,
+`<service>.<volume>`.
+
+Each command then polls every two seconds until what it deletes is gone, up
+to a five-minute deadline; the deletion continues after the deadline or an
+interruption. A service already `terminating` or a volume already `deleting`
+is awaited without the question below or a new deletion.
 
 In a terminal, both commands show what they delete and ask for its typed
 name; any other answer deletes nothing and exits 2. `--silent` skips the

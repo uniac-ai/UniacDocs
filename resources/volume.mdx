@@ -1,15 +1,15 @@
 ---
 title: "Volume"
-description: "A volume is durable storage with a project-scoped identity. Its data and lifetime are independent of the service holding it."
+description: "A volume is durable storage with a project-scoped identity. Its data and lifetime are independent of the service bound to it."
 ---
 
 
 A volume is durable storage with a project-scoped identity. Its data and
-lifetime are independent of the service holding it.
+lifetime are independent of the service bound to it.
 
 ## Required and optional configuration
 
-A singleton service can attach one volume. An attachment requires:
+A singleton service can declare one volume. The declaration requires:
 
 | Field | Required | Meaning |
 |---|---|---|
@@ -52,22 +52,31 @@ the scoped name, `size_gb`, and `mount_path`.
 
 ## Lifecycle
 
-Declaring a new volume name provisions storage, and declaring an existing
-unattached volume attaches it; each volume has one holder at a time.
-Redeploying with the same volume name reuses its data, including when its
-mount path changes. Removing the volume declaration on redeploy detaches it;
-deleting the service also detaches its volume and preserves its data.
+Declaring a new volume name provisions storage and binds the volume to the
+service; declaring an existing volume that no service is bound to binds it.
+A volume is bound to one service at a time. Redeploying with the same volume
+name reuses its data, including when its mount path changes. Removing the
+volume declaration on redeploy unbinds it; deleting the service also unbinds
+its volume and preserves its data.
 
 A volume keeps the size it was created with. A deployment that declares
 another `size_gb` for an existing volume stops the singleton's running replica
 and then fails; the service stays stopped until a deployment declares the
 original size.
 
-A volume's state distinguishes attachment to a service from an unattached
-volume whose data is retained. Transitional states include `provisioning`,
-`attaching`, `detaching`, and `deleting`.
-
 A fresh volume contains `lost+found`.
 
-A volume is deleted once no service holds it. Deletion requires name
-confirmation and destroys stored data.
+Deleting a volume requires name confirmation and destroys its data; it is
+refused while a service is bound to the volume. The volume is removed once
+its storage is released, and a deployment that declares the name of a
+volume being deleted fails.
+
+### States
+
+| State | Meaning |
+|---|---|
+| `provisioning` | The volume's storage is being created. |
+| `bound` | A service is bound to the volume. |
+| `releasing` | No service is bound, and the volume's storage is still being released. |
+| `available` | No service is bound, and the storage is released; the data is retained. |
+| `deleting` | The deletion is accepted; the volume is removed once its storage is released. |
