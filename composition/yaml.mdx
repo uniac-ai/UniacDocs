@@ -152,7 +152,7 @@ deployable description.
 The generated description is JSON with `kind: deployable` and a `services`
 array. Each entry contains a service name, normalized source declaration,
 environment templates, and runtime configuration, including a declared
-`replicas` count and a declared `vcpu` and `memory_mib`. The remote project binding lives in `.uniac/deploy.json`,
+`replicas` count. The remote project binding lives in `.uniac/deploy.json`,
 and environment values remain templates until deployment.
 Build paths are authored relative to the defining manifest's directory and
 normalized relative to the project root in the generated description. Thus
@@ -163,7 +163,7 @@ build defaults, YAML formatting, and mapping or exposure-list ordering leave it
 unchanged. Reordering workspace includes or moving an identical checkout to
 another absolute path also preserves the digest. A declared `replicas` count
 is part of the description; omitting it and `null` produce the same
-description. A declared size is part of it too, and an omitted `vcpu` or
-`memory_mib` is absent from it. An explicit build `target` remains part of the description even
+description. A declared `vcpu` or `memory_mib` is part of it too, even at
+its default. An explicit build `target` remains part of the description even
 when it names the Dockerfile's last stage. The digest excludes source-file and
 image contents and remotely resolved environment values.
