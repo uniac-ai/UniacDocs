@@ -106,8 +106,10 @@ includes its allocated public port; the number after `→` is the container
 port. Columns align within each block, so their character offsets vary.
 
 Whole-project `status` lists services in name order and adds project volume
-blocks after them. Each volume block has its name, `size` in GB and `state`:
-`bound to <service>`, `available (no service is bound; data intact)`, or
+blocks after them. Each volume block has its name, its `size` in GB and its
+`state`. While a [growth](/resources/volume#lifecycle) is pending, `size`
+also names the size it is growing to, as in `5GB, growing to 20GB`. `state`
+is `bound to <service>`, `available (no service is bound; data intact)`, or
 `provisioning`, `releasing` or `deleting`. `deploy` and single-service
 `status` show service mounts; whole-project `status` also lists volumes no
 service is bound to.
