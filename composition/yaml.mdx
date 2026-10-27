@@ -63,8 +63,8 @@ definition names; service names are unique across the project.
 
 `type: service` and `type: singleton` create reusable **service definitions**
 for stateless and singleton execution. A definition holds the OCI image or
-Dockerfile build source, environment, startup command, and storage needs. The
-image platform is `linux/amd64`.
+Dockerfile build source, environment, startup command, size, and storage
+needs. The image platform is `linux/amd64`.
 A deployment declaration turns it into a running service. Complete field
 contracts are in [Service](/resources/service) and [Volume](/resources/volume).
 
@@ -163,6 +163,7 @@ build defaults, YAML formatting, and mapping or exposure-list ordering leave it
 unchanged. Reordering workspace includes or moving an identical checkout to
 another absolute path also preserves the digest. A declared `replicas` count
 is part of the description; omitting it and `null` produce the same
-description. An explicit build `target` remains part of the description even
+description. A declared `vcpu` or `memory_mib` is part of it too, even at
+its default. An explicit build `target` remains part of the description even
 when it names the Dockerfile's last stage. The digest excludes source-file and
 image contents and remotely resolved environment values.

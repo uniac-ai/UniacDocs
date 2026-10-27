@@ -27,8 +27,9 @@ errors to stderr. A failure to render a status report can also write stderr.
 The text preview names the local project and root directory, its optional
 description, and the digest of its complete generated description. It then
 shows shared image work under `Building` and named services under
-`Deploying`. Service rows include sources, declared public exposure, volumes
-and a declared replica count, grouped by package for a workspace. `--full`
+`Deploying`. Service rows include sources, declared public exposure, volumes,
+a declared replica count and a declared size, grouped by package for a
+workspace. `--full`
 adds environment values, the start command, and the source definition's
 name.
 
@@ -90,6 +91,7 @@ storage state in [Volume states](/resources/volume#states).
 | `service` | A service name, followed by `v<N>` when a serving version was read. |
 | `status` | Reported status, followed by the `(observed/effective)` replica counts when the observed count is reported. |
 | `kind` | Reported service kind, omitted when unavailable. |
+| `size` | `<N> vCPU, <M> MiB`: the serving version's [size](/resources/service#size), omitted when unavailable. |
 | `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
 | `deploying` | The in-flight task state and its current step when reported. |
 | `replicas` | `<N> requested`, shown when the requested and effective counts differ. |
@@ -165,9 +167,9 @@ The following exit codes apply to `deploy`, `status`, `service delete` and
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, observation deadline expiry, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to), or a service or volume deletion still running at the deadline. |
+| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to). |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
-| 10 | `pending` | Reserved. |
+| 10 | `pending` | `deploy`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
 | 70 | `internal` | Unclassified failure. |
 
 These commands use the codes above. Some conditions use a code whose name
@@ -182,9 +184,8 @@ describes only part of the cause:
 - Platform/project API HTTP 401 produces 3; HTTP 403 during project checks,
   registration or observation produces 8. Docker registry credential
   rejection remains a push failure (7).
-- A deployment observation deadline produces 8 while the accepted work
-  continues. After a successful first task read, later task-read failures
-  fail the command using these classifications.
+- After a successful first task read, later task-read failures fail the
+  command using these classifications.
 - Project checks, status reads and deployment push/request operations
   classify transport errors and HTTP 502, 503, 504, 521, 522, 523 and 530 as
   unreachable (9). Other refused API reads, including HTTP 500, produce 8.
