@@ -14,7 +14,7 @@ A singleton service can declare one volume. The declaration requires:
 | Field | Required | Meaning |
 |---|---|---|
 | `name` | Yes | Local volume name matching `^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`. |
-| `size_gb` | Yes | Size in GB when the volume is created: a number from 1 to 4096 after truncation toward zero. Later deployments declare the same size, as [Lifecycle](#lifecycle) describes. |
+| `size_gb` | Yes | Size in GB: a number from 1 to 4096 after truncation toward zero. A larger size on a later deployment grows the volume, as [Lifecycle](#lifecycle) describes. |
 | `mount_path` | Yes | Absolute path other than `/`, with no `.` or `..` segments, repeated slashes, or trailing slash, outside `/proc`, `/sys` and `/dev`, and other than `/etc/resolv.conf`. |
 
 The resulting project-scoped name is `<service>.<name>`, up to 127
@@ -59,17 +59,27 @@ name reuses its data, including when its mount path changes. Removing the
 volume declaration on redeploy unbinds it; deleting the service also unbinds
 its volume and preserves its data.
 
-A volume keeps the size it was created with. A deployment that declares
-another `size_gb` for an existing volume stops the singleton's running replica
-and then fails; the service stays stopped until a deployment declares the
-original size.
+A deployment that declares a larger `size_gb` for an existing volume grows
+it while its service runs. The deployment requests the size and completes
+without waiting for it; the volume's storage then grows, and the running
+container sees the added space within seconds, without a restart. Until the
+storage has grown, the growth is pending: the volume's requested size is
+larger than its size. A pending growth is retried until it is made, and a
+deployment that declares the volume's current size withdraws it. Storage is
+charged at the volume's size, the grown size from the minute the volume
+shows it.
+
+A volume never shrinks: a deployment that declares a `size_gb` smaller than
+the volume's is refused when it is submitted, and the running service is
+unaffected. A volume whose storage is still being created takes the size of
+the latest deployment that declares it.
 
 A fresh volume contains `lost+found`.
 
 Deleting a volume requires name confirmation and destroys its data; it is
 refused while a service is bound to the volume. The volume is removed once
 its storage is released, and a deployment that declares the name of a
-volume being deleted fails.
+volume being deleted is refused.
 
 ### States
 
