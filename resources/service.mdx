@@ -204,7 +204,7 @@ The stateless `web` service runs two replicas and receives the URL declared by
 `cache`, which uses `cache`'s own internal hostname. The `web` service's port
 8080 is exposed through HTTPS and a separately allocated raw TCP endpoint. The
 singleton `cache` service starts Redis with 1024 MiB of memory and
-append-only persistence on a 1 GB volume mounted at `/data`.
+append-only persistence on a 1 GiB volume mounted at `/data`.
 
 ```yaml
 resources:
