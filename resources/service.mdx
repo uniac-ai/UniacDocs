@@ -157,13 +157,15 @@ version deployed before sizing runs with 1 vCPU and 256 MiB.
 
 A replica that no node has room for waits with its instance `starting`, and
 its deployment stays in progress until a node has room. Deleting the service
-always ends the wait. A new singleton deployment replaces the waiting one; a
-new stateless deployment replaces it only once the new version is running, so
-it needs room beside the serving version and any replicas the waiting
-deployment has already placed. A stateless deployment needs room for its new
-version beside the previous one. A singleton's previous replica stops first,
-so the service can stay stopped until room appears, even at the same size,
-when replicas already waiting take the freed room first.
+always ends the wait. A replica count set in the dashboard replaces a waiting
+change to the serving version's count, so a lower count that fits ends that
+wait. A new singleton deployment replaces the waiting one; a new stateless
+deployment replaces it only once the new version is running, so it needs room
+beside the serving version and any replicas the waiting deployment has
+already placed. A stateless deployment needs room for its new version beside
+the previous one. A singleton's previous replica stops first, so the service
+can stay stopped until room appears, even at the same size, when replicas
+already waiting take the freed room first.
 
 ## YAML composition example
 

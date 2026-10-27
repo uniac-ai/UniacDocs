@@ -178,9 +178,9 @@ five-minute observation deadline passes. Authentication or
 access denial fails the command. In other cases, the report shows the accepted
 registration without an observed state.
 
-Failure or interruption stops new local work and returns partial results:
-when a deployment fails to settle, the services registered after it are not
-attempted. Deployments the platform accepted continue, each on its own. An
+Failure, interruption or the observation deadline stops new local work and
+returns partial results: when a deployment does not settle, the services
+registered after it are not attempted. Deployments the platform accepted continue, each on its own. An
 interrupted or lost registration response leaves acceptance unconfirmed. A
 later deploy is a new, independent operation.
 
@@ -202,8 +202,8 @@ to is refused. `<name>` is the volume's full name as `status` lists it,
 `<service>.<volume>`.
 
 Each command then polls every two seconds until what it deletes is gone, up
-to a five-minute deadline; the deletion continues after the deadline or an
-interruption. A service already `terminating` or a volume already `deleting`
+to a five-minute deadline, then exits `pending`; the deletion continues
+after the deadline or an interruption. A service already `terminating` or a volume already `deleting`
 is awaited without the question below or a new deletion.
 
 In a terminal, both commands show what they delete and ask for its typed

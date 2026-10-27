@@ -167,9 +167,9 @@ The following exit codes apply to `deploy`, `status`, `service delete` and
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to), or a service or volume deletion still running at the deadline. |
+| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to). |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
-| 10 | `pending` | `deploy` stopped observing a deployment the platform is still working on, after five minutes. Nothing failed; the dashboard shows it finish. |
+| 10 | `pending` | `deploy`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
 | 70 | `internal` | Unclassified failure. |
 
 These commands use the codes above. Some conditions use a code whose name
