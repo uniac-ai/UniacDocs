@@ -156,12 +156,12 @@ omits a value gets its default, whatever the serving version's size. A
 version deployed before sizing runs with 1 vCPU and 256 MiB.
 
 A replica that no node has room for waits with its instance `starting`, and
-its deployment task then fails with `convergence_timeout`. Once a node has
-room, retrying that task from the [dashboard](#dashboard-and-removal)
-completes the deployment. A stateless deployment needs room for its new
-version beside the previous one. A singleton's previous replica stops
-first, so the service can stay stopped until room appears, even at the same
-size, when replicas already waiting take the freed room first.
+its deployment stays in progress until a node has room, then completes. A new
+deployment of the service, or deleting it, replaces a deployment waiting this
+way. A stateless deployment needs room for its new version beside the
+previous one. A singleton's previous replica stops first, so the service can
+stay stopped until room appears, even at the same size, when replicas already
+waiting take the freed room first.
 
 ## YAML composition example
 
