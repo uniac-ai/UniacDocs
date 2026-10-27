@@ -35,6 +35,8 @@ Data that must outlive a replica is written to a
 | Container source | Exactly one | An OCI image reference or a Dockerfile build source. The image platform is `linux/amd64`: a referenced image provides it, and a build targets it. |
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
+| vCPUs | No | 1 or 2 whole vCPUs per container; 1 when omitted. [Size](#size). |
+| Memory | No | 512 to 4096 MiB per container; 512 MiB when omitted. [Size](#size). |
 | Volume | No | [Durable storage](/resources/volume) for a singleton service. |
 | Replica count | No | 0 to 4 for a stateless service, 0 or 1 for a singleton; a new service runs one. [Deployment versions](#runtime-and-deployment-versions) apply it. |
 | Public exposure | No | [Public endpoints](#public-endpoints) declared with the service's deployment. |
@@ -140,13 +142,43 @@ that deployment. A service picks up a new or changed value from another
 service on its own next deployment. A variable whose referenced service starts
 serving later is omitted with a warning and filled in by that next deployment.
 
+## Size
+
+A service's size sets the CPU and memory of each of its containers. The
+vCPU count is a ceiling on the node's shared CPU, and it sets the
+container's process limit at 4,096 per vCPU. Memory is a hard limit for the
+container's processes together: a process past it is OOM-killed, and a
+container whose main process is killed exits with code 137. Each replica's
+memory is reserved on the node that runs it, so a replica is placed only on
+a node with that much memory free.
+
+The size belongs to a deployment version and is set when the version is
+deployed. An omitted size is the default, 1 vCPU and 512 MiB, on every
+deployment; the serving version's size never carries over. A version
+deployed before sizing runs with 1 vCPU and 256 MiB until its service's
+next deployment.
+
+A replica that no node has room for waits: its instance is `starting`, and
+the deployment fails with `convergence_timeout` after its 330-second settle
+period. The replica is placed once a node has room, and retrying the failed
+deployment task from the [dashboard](#dashboard-and-removal) then completes
+the deployment; deploying a size that fits is the other way out. A singleton's previous replica stops before its successor
+is placed, so when no node has spare room the singleton can be left
+stopped until room appears, even at the same size, since a replica already
+waiting for room, or another deployment's, may take the room the previous
+replica frees first. A stateless deployment starts its new version before
+stopping the previous one, so it needs room for both at once.
+
 ## YAML composition example
 
 In [YAML composition](/composition/yaml), `type: service` selects
 stateless execution and `type: singleton` selects singleton execution. Exactly
 one of `image` or `build` supplies the container source; `image: ""` counts
 as absent. Optional configuration uses `env`, the `start_command` string,
-and the `volumes` list. `env` maps variable names to string values.
+the `vcpu` and `memory_mib` integers, and the `volumes` list. `env` maps
+variable names to string values. A `vcpu` or `memory_mib` that is not an
+integer fails locally; one outside its [range](#size) is rejected at
+deployment, naming the field.
 
 `build` accepts a string naming the build root or an object containing the
 build fields above. An empty string selects the default root; `build: null`
@@ -173,8 +205,8 @@ package.
 The stateless `web` service runs two replicas and receives the URL declared by
 `cache`, which uses `cache`'s own internal hostname. The `web` service's port
 8080 is exposed through HTTPS and a separately allocated raw TCP endpoint. The
-singleton `cache` service starts Redis with append-only persistence on a 1 GB
-volume mounted at `/data`.
+singleton `cache` service starts Redis with 1024 MiB of memory and
+append-only persistence on a 1 GB volume mounted at `/data`.
 
 ```yaml
 resources:
@@ -189,6 +221,7 @@ resources:
     env:
       URL: "redis://${{self.host}}:6379"
     start_command: redis-server --appendonly yes
+    memory_mib: 1024
     volumes:
       - name: data
         size_gb: 1
@@ -261,6 +294,7 @@ An instance also reports when its container started.
 |---|---|
 | Serving version | The service deployment currently serving, identified by its version number. |
 | Lifecycle | The deployment's phase: `preparing`, `active`, `retiring`, or `retired`. |
+| Size | The serving version's vCPUs and memory in MiB. |
 | Requested replicas | The requested container count. |
 | Effective replicas | The container count after platform policy is applied. |
 | Observed replicas | The number of instances that are `healthy` or `unhealthy`; unreported while the platform cannot observe one of the replicas. |
@@ -274,8 +308,9 @@ An instance also reports when its container started.
 A service's dashboard page shows its state, public endpoints, deployment
 activity and resource usage. It sets the replica count (0 to 4 for a stateless
 service, 0 or 1 for a singleton), which later deployments keep unless their
-declaration sets `replicas`. It also changes public endpoints and offers
-**Delete service**, confirmed by typing the service's name.
+declaration sets `replicas`. It also retries a failed deployment task, changes
+public endpoints and offers **Delete service**, confirmed by typing the
+service's name.
 
 Deleting a service stops its replicas and removes its deployments, images and
 public endpoints. The service reports `terminating` until the removal

@@ -27,8 +27,9 @@ errors to stderr. A failure to render a status report can also write stderr.
 The text preview names the local project and root directory, its optional
 description, and the digest of its complete generated description. It then
 shows shared image work under `Building` and named services under
-`Deploying`. Service rows include sources, declared public exposure, volumes
-and a declared replica count, grouped by package for a workspace. `--full`
+`Deploying`. Service rows include sources, declared public exposure, volumes,
+a declared replica count and a declared size, grouped by package for a
+workspace. `--full`
 adds environment values, the start command, and the source definition's
 name.
 
@@ -90,6 +91,7 @@ storage state in [Volume states](/resources/volume#states).
 | `service` | A service name, followed by `v<N>` when a serving version was read. |
 | `status` | Reported status, followed by the `(observed/effective)` replica counts when the observed count is reported. |
 | `kind` | Reported service kind, omitted when unavailable. |
+| `size` | `<N> vCPU, <M> MiB`: the serving version's [size](/resources/service#size), omitted when unavailable. |
 | `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
 | `deploying` | The in-flight task state and its current step when reported. |
 | `replicas` | `<N> requested`, shown when the requested and effective counts differ. |
