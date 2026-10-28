@@ -21,8 +21,10 @@ The document is a mapping with these top-level fields:
 Resource names match `^[a-z0-9]+(?:(?:__?|-+)[a-z0-9]+)*$` and are unique
 within the file. A deployment declaration's name is also its service's name,
 so it is one DNS label: lowercase letters, digits and dashes, starting and
-ending with a letter or digit, at most 63 characters. Every resource requires
-`type`; unknown fields are rejected at every level.
+ending with a letter or digit, at most 63 characters. `localhost`,
+`ip6-localhost` and `ip6-loopback` name loopback inside every container and
+are not service names. Every resource requires `type`; unknown fields are
+rejected at every level.
 
 ## Workspaces and packages
 

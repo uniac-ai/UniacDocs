@@ -63,9 +63,10 @@ build context stays within that package.
 
 ## Networking and endpoints
 
-Services are addressable as `<service>.internal` within their project, and
-internal communication needs no port declarations. A service is private to its
-project until it declares a public endpoint.
+Within its project, a service is addressable by its name, such as `cache`, on
+any port its application listens on; internal communication needs no port
+declarations. A service is private to its project until it declares a public
+endpoint.
 
 The application chooses its listen port, and each public endpoint names that
 port. An application that reads `PORT` gets it from a declared
@@ -112,7 +113,8 @@ serving deployment's values. Changing a value deploys a new version.
 
 A reference's scope names a service, independently of its definition
 name. `${{self.VAR}}` names a variable on the declaring service.
-The one builtin, `host`, is the referenced service's internal hostname.
+The one builtin, `host`, is the referenced service's internal hostname, which
+is its name: `${{cache.host}}` is `cache`.
 
 References have this grammar:
 
