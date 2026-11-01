@@ -65,14 +65,14 @@ without waiting for it; the volume's storage then grows, and the running
 container sees the added space within seconds, without a restart. Until the
 storage has grown, the growth is pending: the volume's requested size is
 larger than its size. A pending growth is retried until it is made, and a
-deployment that declares the volume's current size withdraws it. Storage is
+deployment that declares the volume's current size or less withdraws it. Storage is
 charged at the volume's size, the grown size from the minute the volume
 shows it.
 
 A volume never shrinks: a deployment that declares a `size_gb` smaller than
-the volume's is refused when it is submitted, and the running service is
-unaffected. A volume whose storage is still being created takes the size of
-the latest deployment that declares it.
+the volume's is accepted and leaves the volume at its size. A volume whose
+storage is still being created takes the size of the latest deployment that
+declares it.
 
 A fresh volume contains `lost+found`.
 

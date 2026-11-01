@@ -35,8 +35,8 @@ Data that must outlive a replica is written to a
 | Container source | Exactly one | An OCI image reference or a Dockerfile build source. The image platform is `linux/amd64`: a referenced image provides it, and a build targets it. |
 | Environment variables | No | [Environment values and references](#environment-and-references). |
 | Start command | No | Replaces the image's startup command (`ENTRYPOINT` and `CMD`) at runtime; the image is unchanged. |
-| vCPUs | No | 1 or 2 whole vCPUs per container; 1 when omitted. [Size](#size). |
-| Memory | No | 512 to 4096 MiB per container; 512 MiB when omitted. [Size](#size). |
+| vCPUs | No | 1 or 2 whole vCPUs per container. Omitted, the service keeps its current vCPUs, and a new service gets 1. [Size](#size). |
+| Memory | No | 512 to 4096 MiB per container. Omitted, the service keeps its current memory, and a new service gets 512 MiB. [Size](#size). |
 | Volume | No | [Durable storage](/resources/volume) for a singleton service. |
 | Replica count | No | 0 to 4 for a stateless service, 0 or 1 for a singleton; a new service runs one. [Deployment versions](#runtime-and-deployment-versions) apply it. |
 | Public exposure | No | [Public endpoints](#public-endpoints) declared with the service's deployment. |
@@ -154,8 +154,9 @@ replica's memory is reserved on the node that runs it, so a replica is
 placed only on a node with that much memory unreserved.
 
 The size belongs to a deployment version: a deployment whose declaration
-omits a value gets its default, whatever the serving version's size. A
-version deployed before sizing runs with 1 vCPU and 256 MiB.
+omits a value keeps the serving version's, and a new service gets 1 vCPU
+and 512 MiB. A version deployed before sizing runs with 1 vCPU and 256 MiB;
+a deployment that omits memory moves it to 512 MiB.
 
 A replica that no node has room for waits with its instance `starting`, and
 its deployment stays in progress until a node has room. Deleting the service
