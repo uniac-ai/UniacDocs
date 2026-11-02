@@ -8,9 +8,9 @@ description: "deploy prints one final text report to stdout, containing its exec
 
 `deploy` prints one final text report to stdout, containing its execution
 record followed by the state it could report. `status` prints the state and,
-if its read fails, an error block. `service delete` and `volume delete` print
-their outcome or the same error block, and ask their confirmation question on
-stderr. These reports are text; `plan --json` is the JSON output. Help and
+if its read fails, an error block. `service delete`, `volume delete` and
+`project delete` print their outcome or the same error block, and ask their
+confirmation question on stderr. These reports are text; `plan --json` is the JSON output. Help and
 argument-parsing errors go to stderr and leave stdout empty.
 
 Deployment progress uses stderr. By default, a terminal with usable width
@@ -105,14 +105,16 @@ The endpoint address is the complete address a client uses. A TCP address
 includes its allocated public port; the number after `→` is the container
 port. Columns align within each block, so their character offsets vary.
 
-Whole-project `status` lists services in name order and adds project volume
-blocks after them. Each volume block has its name, its `size` in GiB and its
-`state`. While a [growth](/resources/volume#lifecycle) is pending, `size`
-also names the size it is growing to, as in `5GiB, growing to 20GiB`. `state`
-is `bound to <service>`, `available (no service is bound; data intact)`, or
+Whole-project `status` lists services in name order. It and `deploy` add the
+project's volume blocks after the services, volumes no service is bound to
+included. Each volume block has its name, its `size` in GiB and its `state`.
+While a [growth](/resources/volume#lifecycle) is pending, `size` also names
+the size it is growing to and, when the platform has recorded it, since when
+the growth was requested, in RFC 3339 UTC, as in
+`5GiB, growing to 20GiB since 2026-11-01T05:29:54Z`. `state` is
+`bound to <service>`, `available (no service is bound; data intact)`, or
 `provisioning`, `releasing` or `deleting`. `deploy` and single-service
-`status` show service mounts; whole-project `status` also lists volumes no
-service is bound to.
+`status` also show each service's mounts.
 
 ### Partial observations and warnings
 
@@ -139,12 +141,15 @@ Platform warnings are passed through, including unresolved
 ## Deletion output
 
 A successful `service delete` prints its first line below, and the second for
-a volume bound to the service; a successful `volume delete` prints the third:
+a volume bound to the service; a successful `volume delete` prints the third,
+and a successful `project delete` the last two:
 
 ```text
 Deleted service <name> from project <project>.
 Volume <volume> is unbound and keeps its data; `uniac volume delete <volume>` destroys it.
 Deleted volume <name> and its data from project <project>.
+Deleted project <name>.
+The platform finishes removing its services, endpoints and volumes on its own; the name <name> stays taken until it has.
 ```
 
 When the platform differs from production, `on <platform-url>` follows the
@@ -157,8 +162,8 @@ and `retryable yes` when reported. Deployment puts the code on the root line
 and annotates a retryable failure there. `retryable` means the same operation
 may succeed without changes; error messages are explanatory prose.
 
-The following exit codes apply to `deploy`, `status`, `service delete` and
-`volume delete`:
+The following exit codes apply to `deploy`, `status`, `service delete`,
+`volume delete` and `project delete`:
 
 | Exit | Code | Condition |
 |---|---|---|
@@ -169,7 +174,7 @@ The following exit codes apply to `deploy`, `status`, `service delete` and
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read, a delete the platform refuses (including a missing service or volume and a volume a service is bound to). |
+| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read, a delete the platform refuses (including a missing service, volume or project and a volume a service is bound to). |
 | 9 | `unreachable` | A platform request was classified as unreachable. |
 | 10 | `pending` | `deploy`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
 | 70 | `internal` | Unclassified failure. |

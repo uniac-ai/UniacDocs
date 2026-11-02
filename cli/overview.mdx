@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.29.
+This reference describes release 0.3.31.
 
 ## Invocation
 
@@ -28,11 +28,11 @@ usage.
 | `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
+| `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
 | `uniac auth <login\|status\|token\|logout>` | Manage [authentication](/cli/authentication). |
 | `uniac version` | Print the installed binary's version, commit and build time. |
 
-`--version` and `-v` are aliases for `version`. Projects are deleted in the
-[dashboard](/#project-lifetime).
+`--version` and `-v` are aliases for `version`.
 [Output](/cli/output) describes result formats, progress and exit codes.
 
 ## Local initialization
@@ -71,7 +71,7 @@ Deployment addresses an existing
 `project create <name>` creates one on the authenticated account and prints
 its name and assigned slug. It is non-interactive, works from any directory,
 and changes only the remote account. The name must match
-`^[a-z][a-z0-9-]{0,62}$`. Project creation and linking use the
+`^[a-z][a-z0-9-]{0,62}$`. Project creation, deletion and linking use the
 platform selected by `UNIAC_PLATFORM_URL`, whose default and credential
 selection are described in [Authentication](/cli/authentication).
 
@@ -97,7 +97,7 @@ operations. Each operation captures its destination when it starts, so a
 concurrent relink applies to later operations. Relinking changes where later
 commands deploy; remote services stay where they are.
 
-`deploy`, `status` and the [delete commands](#deleting-services-and-volumes)
+`deploy`, `status` and the [service and volume deletes](#deleting-services-volumes-and-projects)
 select their destination as follows:
 
 - A nonempty `UNIAC_PROJECT_URL` names a project by its gateway URL or slug,
@@ -110,8 +110,8 @@ select their destination as follows:
   binding without `platform_url` uses the selected default platform; one
   without `gateway_url` derives the gateway from its slug.
 - Without a binding or override, `deploy` opens the project picker and saves
-  the selected binding; `status` and the delete commands report that the
-  project is not linked.
+  the selected binding; `status` and the service and volume deletes report
+  that the project is not linked.
 
 `status` reads the project that the binding or `UNIAC_PROJECT_URL` names.
 It reads every service in the project, including services missing
@@ -190,7 +190,7 @@ record of image digests, submission outcomes and receipts under
 [Output](/cli/output#partial-observations-and-warnings) describes recording
 failures.
 
-## Deleting services and volumes
+## Deleting services, volumes and projects
 
 `service delete <name>` deletes a service of the linked project, with the
 effects in [Dashboard and removal](/resources/service#dashboard-and-removal):
@@ -201,14 +201,30 @@ a volume bound to it is unbound and keeps its data.
 to is refused. `<name>` is the volume's full name as `status` lists it,
 `<service>.<volume>`.
 
-Each command then polls every two seconds until what it deletes is gone, up
-to a five-minute deadline, then exits `pending`; the deletion continues
-after the deadline or an interruption. A service already `terminating` or a volume already `deleting`
-is awaited without the question below or a new deletion.
+`project delete <name>` deletes a project of the authenticated account, with
+the effects in [Project lifetime](/#project-lifetime): its services,
+endpoints, and every volume and its data, including unbound volumes. Like
+`project create`, it works from any directory.
 
-In a terminal, both commands show what they delete and ask for its typed
-name; any other answer deletes nothing and exits 2. `--silent` skips the
-question and changes nothing else. Without a terminal on standard input,
-`--silent` is required, and the command exits 2 before any network call. Both
-commands select the project as `status` does and use its platform's
-credentials. [Output](/cli/output#deletion-output) describes their results.
+`service delete` and `volume delete` then poll every two seconds until what
+they delete is gone, up to a five-minute deadline, then exit `pending`; the
+deletion continues after the deadline or an interruption. A service already
+`terminating` or a volume already `deleting` is awaited without the question
+below or a new deletion.
+
+`project delete` returns once the platform accepts the deletion. The platform
+then removes the project's services, endpoints and volumes, and
+`project create` accepts the name again once it has. A repeated
+`project delete` finds no project of that name and exits `deploy_failed`. A
+directory linked to the deleted project keeps its binding; `deploy`, `status`
+and the service and volume deletes there exit `not_linked` until `link`
+selects another project.
+
+In a terminal, the three commands show what they delete and ask for its
+typed name; any other answer deletes nothing and exits 2. `--silent` skips
+the question and changes nothing else. Without a terminal on standard input,
+`--silent` is required, and the command exits 2 before any network call.
+`service delete` and `volume delete` select the project as `status` does and
+use its platform's credentials; `project delete` uses the platform and
+credentials of `project create`. [Output](/cli/output#deletion-output)
+describes their results.
