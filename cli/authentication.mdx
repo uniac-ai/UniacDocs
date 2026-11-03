@@ -41,12 +41,12 @@ others. The CLI stores the token as sign-in returns it.
 
 ## Credential selection and renewal
 
-`project create`, `project delete`, `link`, `deploy`, `status`,
+`project create`, `project delete`, `link`, `deploy`, `status`, `logs`,
 `service delete`, `volume delete` and `auth token` use a nonempty
 `UNIAC_ACCESS_TOKEN` first, otherwise the stored session for the addressed
-platform. Linked `deploy`, `status`, `service delete` and `volume delete` use
-the binding's platform origin; `project create`, `project delete`, `link` and
-`auth token` use `UNIAC_PLATFORM_URL`, independently of the project binding.
+platform. Linked `deploy`, `status`, `logs`, `service delete` and
+`volume delete` use the binding's platform origin; `project create`,
+`project delete`, `link` and `auth token` use `UNIAC_PLATFORM_URL`, independently of the project binding.
 An override is used as given. A stored token is usable until 60 seconds
 before its recorded expiry, and deployment needs a usable credential before
 its first network call.
