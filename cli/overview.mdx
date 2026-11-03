@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.31.
+This reference describes release 0.3.32.
 
 ## Invocation
 
@@ -26,6 +26,7 @@ usage.
 | `uniac link [-C <path>] [name-or-slug]` | Create or replace the owning project's remote binding. |
 | `uniac deploy [--dir <path>]` | Build and deploy every declaration in the owning project. |
 | `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
+| `uniac logs <service> [--instance <id>] [-f] [--previous] [--tail <n>] [--since <time>] [--dir <path>]` | Print what a service's instances write. |
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
@@ -51,17 +52,17 @@ account unchanged.
 
 ## Local project ownership
 
-`plan`, `deploy`, `link`, and `status` resolve the owning local project from
-their starting directory. A containing [workspace](/composition/yaml#workspaces-and-packages)
+`plan`, `deploy`, `link`, `status` and `logs` resolve the owning local
+project from their starting directory. A containing [workspace](/composition/yaml#workspaces-and-packages)
 owns its included packages. Without a workspace, the nearest ancestor
 `uniac.yaml` owns the standalone project. Above that project, only a
 `uniac.yaml` that declares `workspace` can contain it; discovery reads the
 others' top-level keys alone. Starting from a member or its subdirectory
 selects the same project as starting from the root.
 
-All four commands validate manifest structure and workspace membership.
+All five commands validate manifest structure and workspace membership.
 An unlisted manifest below a workspace and a nested workspace are errors.
-`link` and `status` need only a valid description; deployable workloads,
+`link`, `status` and `logs` need only a valid description; deployable workloads,
 buildable sources and Docker are requirements of `deploy`.
 
 ## Project selection
@@ -97,7 +98,7 @@ operations. Each operation captures its destination when it starts, so a
 concurrent relink applies to later operations. Relinking changes where later
 commands deploy; remote services stay where they are.
 
-`deploy`, `status` and the [service and volume deletes](#deleting-services-volumes-and-projects)
+`deploy`, `status`, `logs` and the [service and volume deletes](#deleting-services-volumes-and-projects)
 select their destination as follows:
 
 - A nonempty `UNIAC_PROJECT_URL` names a project by its gateway URL or slug,
@@ -110,8 +111,8 @@ select their destination as follows:
   binding without `platform_url` uses the selected default platform; one
   without `gateway_url` derives the gateway from its slug.
 - Without a binding or override, `deploy` opens the project picker and saves
-  the selected binding; `status` and the service and volume deletes report
-  that the project is not linked.
+  the selected binding; `status`, `logs` and the service and volume deletes
+  report that the project is not linked.
 
 `status` reads the project that the binding or `UNIAC_PROJECT_URL` names.
 It reads every service in the project, including services missing
@@ -189,6 +190,45 @@ record of image digests, submission outcomes and receipts under
 `~/.uniac/store`; `UNIAC_STORE_DIR` selects another directory.
 [Output](/cli/output#partial-observations-and-warnings) describes recording
 failures.
+
+## Reading logs
+
+`logs <service>` prints the [logs](/resources/service#logs) of the service's
+instances, as the service has them when the command starts. Each line is
+prefixed with its instance's short form, which
+[Output](/cli/output#log-output) describes with the line format.
+
+| Option | Effect |
+|---|---|
+| `--instance <id>` | Reads one instance, named by its key or by a start of it that no other instance of the service shares. |
+| `-f` | Follows the instances: prints new output as they write it, across restarts, until interrupted. |
+| `--previous` | Reads each instance's run before the current one. It cannot be combined with `-f`. |
+| `--tail <n>` | Starts each run's output `n` lines before its end, from 0 to 100000. Without it, every kept line is printed. |
+| `--since <time>` | Prints only lines received at or after an RFC 3339 time; a time without an offset is UTC. |
+
+Without `-f`, `logs` prints each instance's current run, or with `--previous`
+the run before it, one instance after another in key order, and exits. An
+instance without a run prints nothing, and `--previous` on an instance
+without a previous run fails that instance's read with `deploy_failed`. With
+`-f`, it follows every instance at once and continues into later runs.
+
+The platform ends a followed read after five minutes, and the CLI resumes it
+after the last line it received, without missing or repeating a line. It
+resumes the same way after a dropped connection. When the credential expires,
+the platform ends the read and the CLI's next read fails with `auth`.
+
+When the platform moves a followed instance to another node, the CLI
+continues with its runs there; when the instance is removed, its output ends.
+While the platform cannot serve an instance's logs, as briefly after a move,
+the CLI waits as the platform asks and retries, for up to five minutes of
+waiting in a row, and then reports the instance `unreachable`.
+
+Each instance being read holds one open read. An account can hold 10 open
+reads and an instance 4; a read beyond either fails with `deploy_failed`,
+and its message names the limit it reached.
+
+`logs` selects the project as `status` does and uses its platform's
+credentials.
 
 ## Deleting services, volumes and projects
 

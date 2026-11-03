@@ -289,6 +289,27 @@ and the instance is `failed`.
 
 An instance also reports when its container started.
 
+Each instance has a key, a UUID the platform assigns, which it keeps for its
+life. The platform can move an instance to another node, and the instance
+keeps its key. A new deployment version, a size change, a scale-up and the
+replacement of a `failed` instance start instances with new keys.
+
+### Logs
+
+The platform keeps what each instance writes to stdout and stderr, line by
+line, with the stream and the time the platform received the line. A run is
+one start of the instance's container: its first start, a restart after its
+process exits, and a restart after its node reboots. An instance keeps its
+current run, which is the latest, and the run before it. Both are kept across
+restarts and while the instance is `failed`. Each run keeps its last 8 MiB of
+output. An instance whose container never started has no run.
+
+Logs belong to the instance's placement on its node and are removed with it:
+when a deployment replaces the instance's version, when a scale-down, a pause
+at zero replicas or the service's deletion removes the instance, and when the
+platform replaces it after it is `failed`. When the platform moves an instance
+to another node, the instance's runs start over there.
+
 ### Observed state
 
 | Fact | Meaning |
