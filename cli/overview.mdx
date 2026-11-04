@@ -253,21 +253,24 @@ the instances by their [short forms](/cli/output#log-output). A service
 without instances fails the same way. Each `exec` runs its command once, and
 running `exec` again runs the command again.
 
-`exec` exits with the command's exit code. Its own exit codes are those of
-`docker exec`, so they stand apart from the command's:
+`exec` exits with the command's exit code. For its own outcomes it uses the
+codes `docker exec` uses. A command can exit with the same codes, so each of
+these outcomes except an interruption also writes on stderr, as
+[Output](/cli/output#exec-output) shows:
 
 | Exit | Condition |
 |---|---|
-| 125 | The CLI or the platform failed: an invalid invocation, standard input over 1 MiB, a refused exec, a stream that ended before the command's outcome, a process that could not be started, or an outcome whose exit status the platform did not observe. |
+| 125 | The CLI or the platform failed, such as an invalid invocation, a project that is not linked, a missing or rejected credential, a description error, no instance chosen, standard input over 1 MiB, a refused exec, a stream that ended before the command's outcome, a process that could not be started, or an outcome whose exit status the platform did not observe. |
 | 126 | The program is not executable. |
-| 127 | The program is not on the container's `PATH`. |
-| 130 | The CLI was interrupted. The interruption ends the exec, and the platform stops the command. |
+| 127 | The program was not found: it is not on the container's `PATH`, its path names no file, or the interpreter its `#!` line names is missing. |
+| 130 | The CLI received SIGINT, as from Ctrl-C, or SIGTERM. Either ends the exec, and the platform stops the command's own process. |
 
 An exec is refused when the instance's container is not running, and its
 message names the instance's state; when the account holds 4 open execs or
 the instance 2, and its message names the limit; and when the platform
-cannot run it at the moment. [Output](/cli/output#exec-output) describes the
-lines `exec` adds on stderr.
+cannot run it at the moment. That last refusal can follow a command that
+started and was stopped, so run a command that changes data again only once
+you know it did not run.
 
 `exec` selects the project as `status` does and uses its platform's
 credentials.

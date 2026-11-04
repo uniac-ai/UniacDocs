@@ -316,9 +316,9 @@ An exec runs one command in a running instance's container and returns the
 command's output and outcome. The command runs as the container's own
 process: the image's user, the instance's environment and the image's working
 directory, with the container's capabilities, no-new-privileges, seccomp and
-AppArmor, and without a terminal. Its memory and processes count against the
-instance's, so a command that exhausts memory can stop the instance's own
-process.
+AppArmor, and without a terminal. Its CPU, memory and processes count against
+the instance's [size](#size), so a command that exhausts memory can stop the
+instance's own process.
 
 | Value | Specification |
 |---|---|
@@ -328,10 +328,15 @@ process.
 | Output | 16 MiB across stdout and stderr. Output beyond it is counted and not sent. |
 | Open execs | 4 per account and 2 per instance. |
 
-At the timeout, and when the caller disconnects, the command receives SIGTERM
-and, 5 seconds later, SIGKILL. Processes it leaves in the background keep
-running in the container, and output they hold open is read for at most
-2 seconds after the command exits. An exec ends with one of these outcomes:
+At the timeout, and when the caller disconnects, the command's own process
+receives SIGTERM and, 5 seconds later, SIGKILL. Processes it started are not
+signalled and keep running in the container: the other commands of a shell's
+pipeline or script, and processes it leaves in the background. Output they
+hold open is read for at most 2 seconds after the command exits.
+
+An exec ends with one of these outcomes, unless its stream is cut first, as
+when a platform component on its path restarts; the platform then stops the
+command as it does on a disconnect, and no outcome is reported:
 
 | Outcome | Meaning |
 |---|---|
@@ -348,8 +353,8 @@ exec runs its command once, so running it again runs the command again. When
 the platform cannot run an exec at the moment, it refuses it, and the refusal
 can follow a command that started and was stopped.
 
-Every exec is recorded with who ran which command and how it ended. Its
-output is not recorded.
+The platform records every exec for its operators: who ran which command and
+how it ended. The command's standard input and output are not recorded.
 
 ### Observed state
 

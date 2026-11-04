@@ -12,8 +12,8 @@ if its read fails, an error block. `service delete`, `volume delete` and
 `project delete` print their outcome or the same error block, and ask their
 confirmation question on stderr. `logs` prints instance output on stdout, and
 its notices and error blocks on stderr. `exec` prints its command's stdout
-and stderr on its own, and its notices and error blocks on stderr. These
-reports are text;
+on stdout and its stderr on stderr, and its own notices and error blocks on
+stderr. These reports are text;
 `plan --json` is the JSON output. Help and
 argument-parsing errors go to stderr and leave stdout empty.
 
@@ -220,9 +220,18 @@ status, the line ends with `; its exit status was not observed` and `exec`
 exits 125. The truncation line follows output past the
 [output limit](/resources/service#exec) and leaves the exit code unchanged.
 
-A failure prints the error block below without `retryable`, since running
-`exec` again runs the command again, and exits 125. An interruption prints
-nothing and exits 130.
+An invalid invocation prints the usage, and an argument that is not valid
+UTF-8 or standard input over 1 MiB prints one `uniac exec:` line; nothing is
+sent:
+
+```text
+uniac exec: argument "<arg>" is not valid UTF-8, which an exec cannot carry
+uniac exec: standard input is over 1 MiB, the most an exec sends
+```
+
+Any other failure prints the error block below without `retryable`, since
+running `exec` again runs the command again. All of them exit 125. An
+interruption prints nothing and exits 130.
 
 ## Errors and exit codes
 
@@ -249,7 +258,10 @@ The following exit codes apply to `deploy`, `status`, `logs`,
 | 70 | `internal` | Unclassified failure. |
 
 `exec` prints these codes in its error blocks and exits with the codes in
-[Running a command](/cli/overview#running-a-command).
+[Running a command](/cli/overview#running-a-command): `deploy_failed` when
+the platform refuses the exec or `exec` cannot choose an instance, and
+`unreachable` when the platform cannot run it at the moment, cannot be
+reached, or the stream ends before the command's outcome.
 
 These commands use the codes above. Some conditions use a code whose name
 describes only part of the cause:
