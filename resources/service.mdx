@@ -310,6 +310,47 @@ at zero replicas or the service's deletion removes the instance, and when the
 platform replaces it after it is `failed`. When the platform moves an instance
 to another node, the instance's runs start over there.
 
+### Exec
+
+An exec runs one command in a running instance's container and returns the
+command's output and outcome. The command runs as the container's own
+process: the image's user, the instance's environment and the image's working
+directory, with the container's capabilities, no-new-privileges, seccomp and
+AppArmor, and without a terminal. Its memory and processes count against the
+instance's, so a command that exhausts memory can stop the instance's own
+process.
+
+| Value | Specification |
+|---|---|
+| Command | An argument list of 1 to 256 strings, at most 64 KiB together. The first is the program, found on the container's `PATH`; no shell is added. |
+| Standard input | Optional, at most 1 MiB, closed once it is written. Without it, standard input is empty. |
+| Timeout | 1 to 300 seconds, 60 by default. |
+| Output | 16 MiB across stdout and stderr. Output beyond it is counted and not sent. |
+| Open execs | 4 per account and 2 per instance. |
+
+At the timeout, and when the caller disconnects, the command receives SIGTERM
+and, 5 seconds later, SIGKILL. Processes it leaves in the background keep
+running in the container, and output they hold open is read for at most
+2 seconds after the command exits. An exec ends with one of these outcomes:
+
+| Outcome | Meaning |
+|---|---|
+| `exited` | The command ended by itself, with its exit status, 128 + n for a command ended by signal n. |
+| `timeout` | The platform stopped the command at its timeout. |
+| `container_stopped` | The instance's container stopped while the command ran, through a crash, a deployment, a pause or the instance's removal. |
+| `start_failed` | The process could not be started: the program was not found on the container's `PATH`, the program is not executable, or the process could not be started otherwise. |
+
+After `timeout` and `container_stopped`, the outcome carries the status the
+command ended with when the platform observed it. An exec runs only while the
+instance's container is running; in an instance that is `starting`,
+`unhealthy`, `failed` or `terminating`, it is refused with that state. Each
+exec runs its command once, so running it again runs the command again. When
+the platform cannot run an exec at the moment, it refuses it, and the refusal
+can follow a command that started and was stopped.
+
+Every exec is recorded with who ran which command and how it ended. Its
+output is not recorded.
+
 ### Observed state
 
 | Fact | Meaning |

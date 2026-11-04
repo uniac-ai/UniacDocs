@@ -11,7 +11,9 @@ record followed by the state it could report. `status` prints the state and,
 if its read fails, an error block. `service delete`, `volume delete` and
 `project delete` print their outcome or the same error block, and ask their
 confirmation question on stderr. `logs` prints instance output on stdout, and
-its notices and error blocks on stderr. These reports are text;
+its notices and error blocks on stderr. `exec` prints its command's stdout
+and stderr on its own, and its notices and error blocks on stderr. These
+reports are text;
 `plan --json` is the JSON output. Help and
 argument-parsing errors go to stderr and leave stdout empty.
 
@@ -97,7 +99,7 @@ storage state in [Volume states](/resources/volume#states).
 | `lifecycle` | Reported serving-deployment phase, omitted when empty or `active`. |
 | `deploying` | The in-flight task state and its current step when reported. |
 | `replicas` | `<N> requested`, shown when the requested and effective counts differ. |
-| `instance` | One row per instance of any version of the service: its [status](/resources/service#instances), followed by `, started <time>` in RFC 3339 UTC once its container has started. During a rollout, the previous version's instances show `terminating`. A service without instances has no `instance` row. |
+| `instance` | One row per instance of any version of the service: the short form of its key, as `logs` prefixes its lines ([Log output](#log-output)), then its [status](/resources/service#instances), followed by `, started <time>` in RFC 3339 UTC once its container has started, as in `5b1e0f8c healthy, started 2026-11-03T14:02:07Z`. During a rollout, the previous version's instances show `terminating`. A service without instances has no `instance` row. |
 | `endpoint` | `<type> <address> → :<container-port>`; type and container port are omitted when unavailable. |
 | Indented `volume` | `<name> at <mount-path>` on a service. |
 | `hold` | A platform hold code. |
@@ -173,6 +175,15 @@ platform received them. With `-f`, the instances' lines interleave as they
 arrive. A line over 16 KiB, which the platform keeps in parts, prints whole,
 and so does a run's last line when its output ended mid-line.
 
+With `--timestamps`, each line begins with the time the platform received it,
+RFC 3339 in UTC cut to the second, before the short form. A line the platform
+kept in parts has its first part's time, and the pruned-output notice has
+none:
+
+```text
+2026-11-03T14:02:07Z [5b1e0f8c] server listening on :8080
+```
+
 When output was removed before it could be read, as when a followed instance
 writes faster than its logs are read, stderr gets a notice and output
 continues from the oldest kept line:
@@ -186,6 +197,32 @@ stderr and exits 0. When an instance's read fails, its error block, below,
 goes to stderr and the other instances' output continues; the command exits
 with the first failed instance's code, in key order. An interruption ends the
 command, which exits 0 unless an instance's read had already failed.
+
+## Exec output
+
+`exec` writes its command's output byte for byte as the platform sends it,
+stdout on stdout and stderr on stderr; the order between the two streams is
+approximate. What its exit code cannot say gets one line on stderr:
+
+```text
+uniac exec: the program was not found on the container's PATH
+uniac exec: the program is not executable
+uniac exec: the process could not be started
+uniac exec: the platform stopped the command at its timeout
+uniac exec: the instance's container stopped while the command ran
+uniac exec: output truncated: the command wrote <n> bytes to stdout and <m> to stderr, more than the platform sends
+```
+
+The first three are a start that failed, which exits 127, 126 and 125. After
+a timeout or a stopped container, `exec` exits with the status the command
+ended with, such as 143 after SIGTERM; when the platform did not observe that
+status, the line ends with `; its exit status was not observed` and `exec`
+exits 125. The truncation line follows output past the
+[output limit](/resources/service#exec) and leaves the exit code unchanged.
+
+A failure prints the error block below without `retryable`, since running
+`exec` again runs the command again, and exits 125. An interruption prints
+nothing and exits 130.
 
 ## Errors and exit codes
 
@@ -210,6 +247,9 @@ The following exit codes apply to `deploy`, `status`, `logs`,
 | 9 | `unreachable` | A platform request was classified as unreachable, or an instance's logs stayed unavailable through five minutes of retries. |
 | 10 | `pending` | `deploy`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
 | 70 | `internal` | Unclassified failure. |
+
+`exec` prints these codes in its error blocks and exits with the codes in
+[Running a command](/cli/overview#running-a-command).
 
 These commands use the codes above. Some conditions use a code whose name
 describes only part of the cause:

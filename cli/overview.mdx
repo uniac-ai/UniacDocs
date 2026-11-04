@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.32.
+This reference describes release 0.3.33.
 
 ## Invocation
 
@@ -26,7 +26,8 @@ usage.
 | `uniac link [-C <path>] [name-or-slug]` | Create or replace the owning project's remote binding. |
 | `uniac deploy [--dir <path>]` | Build and deploy every declaration in the owning project. |
 | `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
-| `uniac logs <service> [--instance <id>] [-f] [--previous] [--tail <n>] [--since <time>] [--dir <path>]` | Print what a service's instances write. |
+| `uniac logs <service> [--instance <id>] [-f] [--previous] [--tail <n>] [--since <time>] [--timestamps] [--dir <path>]` | Print what a service's instances write. |
+| `uniac exec <service> [--instance <id>] [--timeout <seconds>] [-i] [--dir <path>] -- <command> [<arg>...]` | Run one command in an instance of a service. |
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
@@ -52,17 +53,17 @@ account unchanged.
 
 ## Local project ownership
 
-`plan`, `deploy`, `link`, `status` and `logs` resolve the owning local
-project from their starting directory. A containing [workspace](/composition/yaml#workspaces-and-packages)
+`plan`, `deploy`, `link`, `status`, `logs` and `exec` resolve the owning
+local project from their starting directory. A containing [workspace](/composition/yaml#workspaces-and-packages)
 owns its included packages. Without a workspace, the nearest ancestor
 `uniac.yaml` owns the standalone project. Above that project, only a
 `uniac.yaml` that declares `workspace` can contain it; discovery reads the
 others' top-level keys alone. Starting from a member or its subdirectory
 selects the same project as starting from the root.
 
-All five commands validate manifest structure and workspace membership.
+All six commands validate manifest structure and workspace membership.
 An unlisted manifest below a workspace and a nested workspace are errors.
-`link`, `status` and `logs` need only a valid description; deployable workloads,
+`link`, `status`, `logs` and `exec` need only a valid description; deployable workloads,
 buildable sources and Docker are requirements of `deploy`.
 
 ## Project selection
@@ -98,7 +99,7 @@ operations. Each operation captures its destination when it starts, so a
 concurrent relink applies to later operations. Relinking changes where later
 commands deploy; remote services stay where they are.
 
-`deploy`, `status`, `logs` and the [service and volume deletes](#deleting-services-volumes-and-projects)
+`deploy`, `status`, `logs`, `exec` and the [service and volume deletes](#deleting-services-volumes-and-projects)
 select their destination as follows:
 
 - A nonempty `UNIAC_PROJECT_URL` names a project by its gateway URL or slug,
@@ -111,8 +112,8 @@ select their destination as follows:
   binding without `platform_url` uses the selected default platform; one
   without `gateway_url` derives the gateway from its slug.
 - Without a binding or override, `deploy` opens the project picker and saves
-  the selected binding; `status`, `logs` and the service and volume deletes
-  report that the project is not linked.
+  the selected binding; `status`, `logs`, `exec` and the service and volume
+  deletes report that the project is not linked.
 
 `status` reads the project that the binding or `UNIAC_PROJECT_URL` names.
 It reads every service in the project, including services missing
@@ -205,6 +206,7 @@ prefixed with its instance's short form, which
 | `--previous` | Reads each instance's run before the current one. It cannot be combined with `-f`. |
 | `--tail <n>` | Starts each run's output `n` lines before its end, from 0 to 100000. Without it, every kept line is printed. |
 | `--since <time>` | Prints only lines received at or after an RFC 3339 time; a time without an offset is UTC. |
+| `--timestamps` | Begins each line with the time the platform received it, RFC 3339 in UTC to the second, as [Output](/cli/output#log-output) shows. |
 
 Without `-f`, `logs` prints each instance's current run, or with `--previous`
 the run before it, one instance after another in key order, and exits. An
@@ -228,6 +230,46 @@ reads and an instance 4; a read beyond either fails with `deploy_failed`,
 and its message names the limit it reached.
 
 `logs` selects the project as `status` does and uses its platform's
+credentials.
+
+## Running a command
+
+`exec <service> -- <command> [<arg>...]` runs one command in a running
+instance of the service, as an [exec](/resources/service#exec), and prints
+what the command writes to stdout on stdout and to stderr on stderr, as it
+arrives. Everything after `--` is the command's argument list, with no shell
+added; `-- sh -c '<script>'` runs a shell the image has. An argument must be
+valid UTF-8.
+
+| Option | Effect |
+|---|---|
+| `--instance <id>` | Runs in one instance, named by its key or by a start of it that no other instance of the service shares. |
+| `--timeout <seconds>` | Stops the command after this many seconds, from 1 to 300. Without it, the platform's default of 60 applies. |
+| `-i` | Sends the CLI's standard input to the command, read to its end, at most 1 MiB. |
+
+A service with one instance runs the command there. A service with several
+needs `--instance`; without it, `exec` runs nothing, and its message lists
+the instances by their [short forms](/cli/output#log-output). A service
+without instances fails the same way. Each `exec` runs its command once, and
+running `exec` again runs the command again.
+
+`exec` exits with the command's exit code. Its own exit codes are those of
+`docker exec`, so they stand apart from the command's:
+
+| Exit | Condition |
+|---|---|
+| 125 | The CLI or the platform failed: an invalid invocation, standard input over 1 MiB, a refused exec, a stream that ended before the command's outcome, a process that could not be started, or an outcome whose exit status the platform did not observe. |
+| 126 | The program is not executable. |
+| 127 | The program is not on the container's `PATH`. |
+| 130 | The CLI was interrupted. The interruption ends the exec, and the platform stops the command. |
+
+An exec is refused when the instance's container is not running, and its
+message names the instance's state; when the account holds 4 open execs or
+the instance 2, and its message names the limit; and when the platform
+cannot run it at the moment. [Output](/cli/output#exec-output) describes the
+lines `exec` adds on stderr.
+
+`exec` selects the project as `status` does and uses its platform's
 credentials.
 
 ## Deleting services, volumes and projects
