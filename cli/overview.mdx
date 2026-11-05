@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.33.
+This reference describes release 0.3.34.
 
 ## Invocation
 
@@ -27,7 +27,8 @@ usage.
 | `uniac deploy [--dir <path>]` | Build and deploy every declaration in the owning project. |
 | `uniac status [--dir <path>] [service]` | Read a linked project's state, or one named service. |
 | `uniac logs <service> [--instance <id>] [-f] [--previous] [--tail <n>] [--since <time>] [--timestamps] [--dir <path>]` | Print what a service's instances write. |
-| `uniac exec <service> [--instance <id>] [--timeout <seconds>] [-i] [--dir <path>] -- <command> [<arg>...]` | Run one command in an instance of a service. |
+| `uniac exec <service> [--instance <id>] [-i] [--dir <path>] -- <command> [<arg>...]` | Run one command in an instance of a service. |
+| `uniac exec -it <service> [--instance <id>] [--dir <path>] -- <command> [<arg>...]` | Run a command in a terminal in an instance of a service. |
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
@@ -244,8 +245,10 @@ valid UTF-8.
 | Option | Effect |
 |---|---|
 | `--instance <id>` | Runs in one instance, named by its key or by a start of it that no other instance of the service shares. |
-| `--timeout <seconds>` | Stops the command after this many seconds, from 1 to 300. Without it, the platform's default of 60 applies. |
 | `-i` | Sends the CLI's standard input to the command, read to its end, at most 1 MiB. |
+| `-t` | Runs the command in a terminal, as [In a terminal](#in-a-terminal) describes. It requires `-i`; `-it` gives both. |
+
+Without `-t`, the platform stops the command 120 seconds after it starts.
 
 A service with one instance runs the command there. A service with several
 needs `--instance`; without it, `exec` runs nothing, and its message lists
@@ -274,6 +277,25 @@ you know it did not run.
 
 `exec` selects the project as `status` does and uses its platform's
 credentials.
+
+### In a terminal
+
+`exec -it <service> -- <command> [<arg>...]` runs the command in a
+[terminal](/resources/service#terminal) connected to the CLI's own, such as
+`-- sh` for a shell. It requires a terminal on the CLI's standard input, and
+the command's arguments together hold at most 512 bytes as UTF-8. The CLI's
+terminal is in raw mode once its connection to the platform is open, so
+every key reaches the program, Ctrl-C included, and the terminal's size
+follows the CLI's window. The terminal ends when the program exits, after 15 minutes
+without input, or at 1 hour.
+
+`exec -it` exits with the program's exit code, and otherwise with the codes
+above: 125 also covers `-t` without `-i` or without a terminal on standard
+input, a command over 512 bytes, a refused terminal, and a connection that
+closed before the terminal ended; 130 is SIGINT or SIGTERM sent to the CLI
+itself. An end other than the program's own exit writes one line on stderr,
+as [Output](/cli/output#exec-output) shows. A terminal is refused as an exec
+is, with its own caps of 4 open terminals per account and 2 per instance.
 
 ## Deleting services, volumes and projects
 

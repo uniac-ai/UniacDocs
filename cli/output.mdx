@@ -233,6 +233,31 @@ Any other failure prints the error block below without `retryable`, since
 running `exec` again runs the command again. All of them exit 125. An
 interruption prints nothing and exits 130.
 
+With `-it`, `exec` writes the terminal's output to stdout as the platform
+sends it, and restores the CLI's terminal before it writes anything else. A
+start that failed prints the same three lines and exit codes as above. Each
+other end besides the program's own exit, and a connection that closed before
+the terminal ended, gets one line on stderr:
+
+```text
+uniac exec: the terminal ended after 15 minutes without input
+uniac exec: the terminal ended at its 1-hour limit
+uniac exec: the terminal ended because the instance's container stopped
+uniac exec: the connection closed before the terminal ended, and the platform stopped its program
+```
+
+After the first three, `exec` exits with the status the program ended with,
+or 125 when the platform did not report one; after the last, it exits 125.
+These invocations print one `uniac exec:` line and send nothing:
+
+```text
+uniac exec: -t requires -i
+uniac exec: -t requires a terminal on standard input
+uniac exec: the command is over 512 bytes, the most a terminal takes
+```
+
+A refused terminal prints the error block, as a refused exec does.
+
 ## Errors and exit codes
 
 A `status` error block contains `error <code>`, a human-readable `message`
@@ -261,7 +286,8 @@ The following exit codes apply to `deploy`, `status`, `logs`,
 [Running a command](/cli/overview#running-a-command): `deploy_failed` when
 the platform refuses the exec or `exec` cannot choose an instance, and
 `unreachable` when the platform cannot run it at the moment, cannot be
-reached, or the stream ends before the command's outcome.
+reached, or the stream ends before the command's outcome. A terminal uses
+the same codes for its refusals and for a platform that cannot be reached.
 
 These commands use the codes above. Some conditions use a code whose name
 describes only part of the cause:

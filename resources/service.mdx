@@ -324,7 +324,7 @@ instance's own process.
 |---|---|
 | Command | An argument list of 1 to 256 strings, at most 64 KiB together. The first is the program, found on the container's `PATH`; no shell is added. |
 | Standard input | Optional, at most 1 MiB, closed once it is written. Without it, standard input is empty. |
-| Timeout | 1 to 300 seconds, 60 by default. |
+| Timeout | 120 seconds, not adjustable. |
 | Output | 16 MiB across stdout and stderr. Output beyond it is counted and not sent. |
 | Open execs | 4 per account and 2 per instance. |
 
@@ -355,6 +355,53 @@ can follow a command that started and was stopped.
 
 The platform records every exec for its operators: who ran which command and
 how it ended. The command's standard input and output are not recorded.
+
+### Terminal
+
+A terminal runs a program interactively in a running instance's container,
+over one connection. The program runs as an exec's command does, with the
+instance's environment and `TERM=xterm`, and its CPU, memory and processes
+count against the instance's [size](#size). A pseudo-terminal of the
+requested size is its standard input, output and error: Ctrl-C is a byte the
+terminal turns into SIGINT for the program in the foreground.
+
+| Value | Specification |
+|---|---|
+| Command | An argument list of 1 to 256 strings, at most 512 bytes together as UTF-8. The first is the program, found on the container's `PATH`; no shell is added. |
+| Size | Columns and rows, each 1 to 65535; 80 by 24 when not given. |
+| Idle limit | 15 minutes without input. |
+| Lifetime | 1 hour. |
+| Open terminals | 4 per account and 2 per instance, counted apart from execs. |
+
+A terminal ends when its program exits, after 15 minutes without input,
+after 1 hour, or when its connection closes or is lost, including through the
+platform's own updates and after 45 seconds without any message from the
+client. The program then receives SIGHUP, and SIGKILL 5 seconds later.
+Processes it leaves in the background keep running. Nothing resumes a
+terminal; run `tmux` or `screen` inside the container to keep a session
+across connections.
+
+A terminal ends with one of these outcomes, unless its connection closes
+first; the platform then stops its program, and no outcome is reported:
+
+| Outcome | Meaning |
+|---|---|
+| `exited` | The program ended by itself, with its exit status, 128 + n for a program ended by signal n. |
+| `idle` | The platform ended it after 15 minutes without input. |
+| `deadline` | The platform ended it at its 1-hour limit. |
+| `container_stopped` | The instance's container stopped while it ran, through a crash, a deployment, a pause or the instance's removal. |
+| `start_failed` | The process could not be started, for the same reasons as an exec's. |
+
+A terminal runs only while the instance's container is running; in an
+instance that is `starting`, `unhealthy`, `failed` or `terminating`, it is
+refused with that state. It is also refused at either cap, for a command
+over 512 bytes or a size out of range, and when the platform cannot start it
+at the moment. That last refusal can follow a program that started and was
+stopped.
+
+The platform records every terminal for its operators: who opened which
+program, its size, and how it ended. What was typed and the output are not
+recorded.
 
 ### Observed state
 
