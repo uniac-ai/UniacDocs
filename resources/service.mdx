@@ -426,6 +426,14 @@ service, 0 or 1 for a singleton), which later deployments keep unless their
 declaration sets `replicas`. It also changes public endpoints and offers
 **Delete service**, confirmed by typing the service's name.
 
+The project's **Logs** page, beside its graph, shows a service's
+[logs](#logs) for one instance or all of them: **Follow** adds output as it
+is written, and **Previous run** shows the run before the current one. A
+service's **Console** opens a [terminal](#terminal) in an instance, running
+`bash` where the image has it and `sh` otherwise. A terminal lasts while the
+service stays open; choosing another instance ends it and opens one there.
+After a terminal ends, **New terminal** opens another.
+
 Deleting a service stops its replicas and removes its deployments, images and
 public endpoints. The service reports `terminating` until the removal
 completes, and is then gone. Its volume is unbound and keeps its data; the
