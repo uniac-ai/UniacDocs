@@ -259,7 +259,7 @@ version runs the declaration's `replicas` count. Without one, it keeps the
 requested count of the serving version, or of the newest `active` version
 when none is serving, including zero; a service with neither starts with one
 replica. The new version replaces the running replicas; a singleton's previous
-replica stops first.
+replica [stops](#stopping-instances) first.
 
 A deployment succeeds once the platform has started the new version's
 containers and stopped and removed the previous versions' containers. It does
@@ -293,6 +293,29 @@ Each instance has a key, a UUID the platform assigns, which it keeps for its
 life. The platform can move an instance to another node, and the instance
 keeps its key. A new deployment version, a size change, a scale-up and the
 replacement of a `failed` instance start instances with new keys.
+
+### Stopping instances
+
+When the platform stops an instance, it removes the instance from routing,
+then sends the container's main process the image's stop signal: the
+Dockerfile `STOPSIGNAL`, or `SIGTERM` when the image declares none. If the
+process has not exited 30 seconds later, the platform kills every process in
+the container with `SIGKILL`. Deployments that replace a version, pause,
+scale-down, moves to another node, deletion and account holds all stop
+instances this way.
+
+While an instance stops, its status is `terminating`. It keeps its volume,
+its outbound network, name resolution of its project's services and its
+logs, and its usage is metered until its process has stopped. Execs and
+terminals running in it end when the stop begins. A deployment, a pause or a
+scale-down completes once the instances it stops are gone.
+
+A main process running as PID 1 receives only the signals it handles, so one
+that installs no handler for the stop signal is killed after the 30 seconds.
+A singleton's successor starts after its predecessor has stopped, on a
+deployment and on a move, so the predecessor's shutdown is part of the
+replacement's downtime. An instance whose node fails or is preempted can be
+stopped without the signal.
 
 ### Logs
 
