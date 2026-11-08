@@ -159,6 +159,32 @@ The platform finishes removing its services, endpoints and volumes on its own; t
 When the platform differs from production, `on <platform-url>` follows the
 project name. A failure prints the error block below.
 
+## Env output
+
+`env <service>` prints one line per variable on stdout, in name order:
+
+```text
+DATABASE_URL=${{db.url}}
+MODE=prod
+```
+
+A successful `env set` or `env unset` prints its first line below, or the
+second when the new version's state could not be read, then a
+`Warning: <text>` line for each condition its deployment succeeded despite,
+then the last two lines:
+
+```text
+Deployed version <n> of <service>, made from version <m>.
+Started a new version of <service>, made from version <m>.
+Changing a variable starts a new version of the service, which restarts its instances.
+The next `uniac deploy` sets the variables `uniac.yaml` declares, replacing changes made here.
+```
+
+A change that leaves the variables as they are prints
+`Service <service> already has these variables; no version was started.`
+A failure prints the error block below: on stderr for `env <service>`, apart
+from the variables on stdout, and on stdout for `env set` and `env unset`.
+
 ## Log output
 
 `logs` prints each line an instance wrote, on stdout whichever stream it was
@@ -265,21 +291,21 @@ and `retryable yes` when reported. Deployment puts the code on the root line
 and annotates a retryable failure there. `retryable` means the same operation
 may succeed without changes; error messages are explanatory prose.
 
-The following exit codes apply to `deploy`, `status`, `logs`,
+The following exit codes apply to `deploy`, `status`, `logs`, `env`,
 `service delete`, `volume delete` and `project delete`:
 
 | Exit | Code | Condition |
 |---|---|---|
 | 0 | — | The command succeeded. |
-| 2 | `usage` | Invalid invocation, including `logs -f` with `--previous`, a delete without `--silent` and without a terminal, or a typed name that does not match; nothing is deployed or deleted and no code is printed on stdout. |
+| 2 | `usage` | Invalid invocation, including `logs -f` with `--previous`, an `env set` argument that is not `NAME=value` or a variable name that does not match, a delete without `--silent` and without a terminal, or a typed name that does not match; nothing is deployed or deleted and no code is printed on stdout. |
 | 3 | `auth` | No locally usable credential, or platform/project API HTTP 401. |
 | 4 | `not_linked` | Missing binding after credential selection, project absent or mismatched with the binding, `UNIAC_PROJECT_URL` naming no project on the account, binding/platform conflict, or deployment's picker found no projects. |
 | 5 | `manifest` | Local project ownership, description validation or deployment-shape failure. |
 | 6 | `build` | Docker daemon, image-pull or build failure. |
 | 7 | `push` | Image upload failure. |
-| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read (including a log read the platform refuses and an `--instance` that matches no instance or several), a delete the platform refuses (including a missing service, volume or project and a volume a service is bound to). |
+| 8 | `deploy_failed` | Deployment request/task failure, a refused platform read (including a log read the platform refuses and an `--instance` that matches no instance or several), a delete the platform refuses (including a missing service, volume or project and a volume a service is bound to), a service with no version that is neither retiring nor retired, and an `env` change made from a version the service no longer has as its newest. |
 | 9 | `unreachable` | A platform request was classified as unreachable, or an instance's logs stayed unavailable through five minutes of retries. |
-| 10 | `pending` | `deploy`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
+| 10 | `pending` | `deploy`, `env set`, `env unset`, `service delete` or `volume delete` stopped observing work the platform is still doing, after five minutes. Nothing had failed by then; `uniac status` or the dashboard shows how it ends. For `deploy`, services registered after it are not attempted; deploy again once it finishes. |
 | 70 | `internal` | Unclassified failure. |
 
 `exec` prints these codes in its error blocks and exits with the codes in

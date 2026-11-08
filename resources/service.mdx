@@ -108,6 +108,8 @@ characters and values up to 4096 characters.
 
 Declared values are stored with the deployment, and the dashboard shows the
 serving deployment's values. Changing a value deploys a new version.
+[`uniac env`](/cli/overview#runtime-env) changes them outside `uniac.yaml`;
+the next `uniac deploy` sets what the file declares again.
 
 ### References
 

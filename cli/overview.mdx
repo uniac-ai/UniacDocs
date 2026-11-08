@@ -29,6 +29,9 @@ usage.
 | `uniac logs <service> [--instance <id>] [-f] [--previous] [--tail <n>] [--since <time>] [--timestamps] [--dir <path>]` | Print what a service's instances write. |
 | `uniac exec <service> [--instance <id>] [-i] [--dir <path>] -- <command> [<arg>...]` | Run one command in an instance of a service. |
 | `uniac exec -it <service> [--instance <id>] [--dir <path>] -- <command> [<arg>...]` | Run a command in a terminal in an instance of a service. |
+| `uniac env <service> [--dir <path>]` | Print a service's variables. |
+| `uniac env set <service> NAME=value [NAME=value...] [--dir <path>]` | Add or replace a service's variables, starting a new version. |
+| `uniac env unset <service> NAME [NAME...] [--dir <path>]` | Remove a service's variables, starting a new version. |
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
@@ -296,6 +299,26 @@ closed before the terminal ended; 130 is SIGINT or SIGTERM sent to the CLI
 itself. An end other than the program's own exit writes one line on stderr,
 as [Output](/cli/output#exec-output) shows. A terminal is refused as an exec
 is, with its own caps of 4 open terminals per account and 2 per instance.
+
+## Runtime env
+
+`env <service>` prints the variables of the service's newest version that is
+neither retiring nor retired, one `NAME=value` a line in name order, with
+`${{…}}` [references](/resources/service#references) as declared. A service
+with no variables prints `Service <service> has no variables.` on stderr.
+
+`env set <service> NAME=value [NAME=value...]` adds or replaces variables, and
+`env unset <service> NAME [NAME...]` removes them. Each starts a new version
+of the service from that version, with the variables changed and everything
+else kept, then polls the new version's deployment as `deploy` does, up to
+five minutes, and exits `pending` at the deadline; the deployment continues.
+Names match `^[A-Za-z_][A-Za-z0-9_]*$`, and a value is everything after the
+first `=`. A change that leaves the variables as they are starts no version.
+
+Changing a variable starts a new version of the service, which restarts its instances.
+The next `uniac deploy` sets the variables `uniac.yaml` declares, replacing changes made here.
+
+When the service gained a newer version first, the command prints "The service changed since you read it; run the command again." and exits `deploy_failed`; it does not retry.
 
 ## Deleting services, volumes and projects
 
