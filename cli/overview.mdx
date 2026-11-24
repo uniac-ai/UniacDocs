@@ -9,7 +9,7 @@ Its commands prepare descriptions, deploy services, and read live state.
 
 `npm install -g @uniac/cli` installs the `uniac` command with Node 18+.
 `npx -y @uniac/cli …` runs the same command without a global installation.
-This reference describes release 0.3.34.
+This reference describes release 0.3.36.
 
 ## Invocation
 
@@ -32,6 +32,7 @@ usage.
 | `uniac service delete <name> [--dir <path>] [--silent]` | Delete a service from the linked project. |
 | `uniac volume delete <name> [--dir <path>] [--silent]` | Delete a volume and its data from the linked project. |
 | `uniac project delete <name> [--silent]` | Delete a remote project and everything in it. |
+| `uniac usage [--month <YYYY-MM>] [--project <name>]` | Print what the account's usage cost in a month, by category, project and service. |
 | `uniac auth <login\|status\|token\|logout>` | Manage [authentication](/cli/authentication). |
 | `uniac version` | Print the installed binary's version, commit and build time. |
 
@@ -335,3 +336,22 @@ the question and changes nothing else. Without a terminal on standard input,
 use its platform's credentials; `project delete` uses the platform and
 credentials of `project create`. [Output](/cli/output#deletion-output)
 describes their results.
+
+## Reading usage
+
+`usage` prints what the account's usage cost in a month, the figures the
+dashboard's [Usage](/#usage) page shows. Without options it reads the
+current month so far: the month, the time its figures run through, and its
+total; each category with its quantity and cost, in the order CPU, Memory,
+Network and Volume; and each project's cost, largest first. A project whose
+cost rounds to $0.00 is left out, and the projects the account no longer has
+are summed into one `Deleted projects (<n>)` line, last.
+
+| Option | Effect |
+|---|---|
+| `--month <YYYY-MM>` | Reads that month instead of the current one: one of the account's 24 most recent months, from the month it was created. |
+| `--project <name>` | Prints that project's cost and categories, then a row per service with usage in the month, in the project's order: its quantity and cost in each category, and its total. Usage tied to no service and the services the project no longer has are summed into one `Deleted services` row, last. |
+
+`usage` changes nothing. Like `project create`, it works from any directory
+and uses that command's platform and credentials.
+[Output](/cli/output#usage-output) describes the report.
